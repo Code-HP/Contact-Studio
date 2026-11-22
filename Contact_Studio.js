@@ -2074,9 +2074,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       state.activeGroup = null;
     renderPane("left");
     renderPane("right");
-    const workspace = document.querySelector(".split-workspace");
-    if (workspace)
-      workspace.classList.toggle("right-hidden", !state.panes.right.listId);
     renderDupesDrawer();
   }
 
