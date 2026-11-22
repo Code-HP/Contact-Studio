@@ -1959,3 +1959,62 @@ body {
   font-size: 13.5px;
   border-radius: 10px;
 }
+
+/* Filter section redesign: one panel, segmented controls, compact action. */
+.pane-head > .dupes-filters {
+  margin: 12px 0 0;
+  padding: 12px;
+  border: 1px solid var(--line-1);
+  border-radius: 12px;
+  background: #fbfcff;
+  gap: 10px;
+}
+.pane-head .filter-group {
+  gap: 6px;
+}
+.pane-head .filter-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.pane-head .filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--line-1);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+.pane-head .filter-chip {
+  flex: 1 1 auto;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-right: 1px solid var(--line-1);
+  border-radius: 0;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.pane-head .filter-chip:last-child {
+  border-right: 0;
+}
+.pane-head .filter-chip:hover {
+  background: #f8faff;
+}
+.pane-head .filter-chip:has(input:checked) {
+  background: var(--brand-2);
+  color: #fff;
+}
+.pane-head .filter-chip:has(input:checked)::before {
+  color: #fff;
+}
+.pane-head .apply-dupes-btn {
+  align-self: flex-end;
+  width: auto;
+  height: 38px;
+  margin-top: 0;
+  padding: 0 18px;
+  font-size: 13px;
+  border-radius: 10px;
+}
