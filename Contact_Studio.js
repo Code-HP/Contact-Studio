@@ -172,7 +172,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       .trim();
   const splitList = (v) =>
     String(v || "")
-      .split(/[;|\/\n,]+|\s{3,}/)
+      .split(/\s*:::\s*|[;|\/\n,]+|\s{3,}/)
       .map((s) => s.trim())
       .filter(Boolean);
   function cleanCellValue(v) {
@@ -1339,6 +1339,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     c.rowLabel = "";
     let fullName = "",
       surname = "";
+    const extraNameParts = []; // e.g. middle name; shown in the name but not used for matching
     const phoneLabelsBySlot = {};
     columns.forEach((col) => {
       const m = col.match(/^(.+?)\s+(\d+)\s*[-–]?\s*Label$/i);
@@ -1394,14 +1395,25 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         });
       } else if (field === "name") {
         if (!fullName) fullName = val;
+        else if (
+          normName(val) !== normName(fullName) &&
+          !extraNameParts.some((p) => normName(p) === normName(val))
+        )
+          extraNameParts.push(val);
       } else if (field === "surname") {
         if (!surname) surname = val;
       } else if (field === "org") {
         if (!c.org) c.org = val;
       }
     }
+    // Matching uses first + surname only, so a middle name doesn't stop a match.
     const combined = [fullName, surname].filter(Boolean).join(" ").trim();
-    c.name = (combined || c.emails[0] || c.phones[0] || "(no name)").trim();
+    const displayName = [fullName]
+      .concat(extraNameParts, [surname])
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    c.name = (displayName || c.emails[0] || c.phones[0] || "(no name)").trim();
     const pKeys = [],
       eKeys = [],
       nKeys = [];
