@@ -1679,29 +1679,33 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     const pe = paneEls(side);
     const pane = state.panes[side];
 
-    pe.selector.innerHTML = "";
-    state.lists.forEach((l) => {
-      const opt = document.createElement("option");
-      opt.value = l.id;
-      const other =
-        side === "left" ? state.panes.right.listId : state.panes.left.listId;
-      opt.textContent =
-        l.name +
-        " (" +
-        countContactsInList(l.id) +
-        ")" +
-        (other === l.id
-          ? " — shown " + (side === "left" ? "right" : "left")
-          : "");
-      opt.disabled = other === l.id;
-      pe.selector.appendChild(opt);
-    });
-    const newOpt = document.createElement("option");
-    newOpt.value = "__new__";
-    newOpt.textContent = "＋ Create new list…";
-    pe.selector.appendChild(newOpt);
-    if (pane.listId && state.lists.some((l) => l.id === pane.listId))
-      pe.selector.value = pane.listId;
+    // The left pane is a fixed "Main" label with no <select>, so skip the
+    // selector there. A missing element must never abort the whole render.
+    if (pe.selector) {
+      pe.selector.innerHTML = "";
+      state.lists.forEach((l) => {
+        const opt = document.createElement("option");
+        opt.value = l.id;
+        const other =
+          side === "left" ? state.panes.right.listId : state.panes.left.listId;
+        opt.textContent =
+          l.name +
+          " (" +
+          countContactsInList(l.id) +
+          ")" +
+          (other === l.id
+            ? " — shown " + (side === "left" ? "right" : "left")
+            : "");
+        opt.disabled = other === l.id;
+        pe.selector.appendChild(opt);
+      });
+      const newOpt = document.createElement("option");
+      newOpt.value = "__new__";
+      newOpt.textContent = "＋ Create new list…";
+      pe.selector.appendChild(newOpt);
+      if (pane.listId && state.lists.some((l) => l.id === pane.listId))
+        pe.selector.value = pane.listId;
+    }
 
     if (pe.deleteListBtn) {
       const canDelete = state.lists.length > 1 && !!pane.listId;
@@ -3269,7 +3273,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   ["left", "right"].forEach((side) => {
     const pe = paneEls(side);
 
-    pe.selector.addEventListener("change", () => {
+    if (pe.selector) pe.selector.addEventListener("change", () => {
       const v = pe.selector.value;
       if (v === "__new__") {
         createAndAssignList(side);
