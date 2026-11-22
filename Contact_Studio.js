@@ -2179,15 +2179,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   }
 
   /* ========== 15. MODALS ========== */
-  function phonesForDisplay(contact) {
-    if (contact.phoneEntries && contact.phoneEntries.length)
-      return contact.phoneEntries
-        .map((e) => (e.label ? e.number + " (" + e.label + ")" : e.number))
-        .join("\n");
-    return contact.phones && contact.phones.length
-      ? contact.phones.join("\n")
-      : "None";
-  }
 
   function createCollapsibleSection(title, icon, count, defaultExpanded) {
     const section = document.createElement("div");
@@ -2317,7 +2308,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       ["List", listName(contact.listId)],
       ["Group", group ? "G" + groupNumberInList(group.id) : "None"],
       ["Organization", contact.org || "None"],
-      ["Phone numbers", phonesForDisplay(contact)],
     ].forEach((pair) => {
       const card = document.createElement("div");
       card.className = "details-quick-card";
