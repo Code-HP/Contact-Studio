@@ -15,9 +15,10 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     visibleColumns: {},
     groupsByList: new Map(),
     groupColors: new Map(),
-    match: { phone: true, name: true, email: true },
+    match: { phone: true, name: true, email: true, org: false },
     onlyNoNumber: false,
     onlyNoName: false,
+    onlyBig: false,
     onlySelfDup: false,
     activeGroup: null, // { id, listId } when a duplicate group is shown alone
     loadedName: "",
@@ -42,9 +43,9 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     "Company",
     "Notes",
   ];
-  const MATCH_TYPES = ["phone", "name", "email"];
+  const MATCH_TYPES = ["phone", "name", "email", "org"];
   const AUTO_LABEL_SEQUENCE = ["Main", "Work", "Home", "Other"];
-  const REASON_LABEL = { phone: "Phone", name: "Name", email: "Email" };
+  const REASON_LABEL = { phone: "Phone", name: "Name", email: "Email", org: "Org" };
   // Digit strings that are almost always placeholders, not real numbers.
   const PLACEHOLDER_PHONE_SEQ = ["1234567890", "0123456789", "9876543210"];
   const XLSX_EXTS = ["xlsx", "xls", "xlsm", "xlsb", "ods"];
@@ -112,6 +113,8 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     matchPhone: $("matchPhone"),
     matchName: $("matchName"),
     matchEmail: $("matchEmail"),
+    matchOrg: $("matchOrg"),
+    onlyBig: $("onlyBig"),
     onlyNoNumber: $("onlyNoNumber"),
     onlyNoName: $("onlyNoName"),
     onlySelfDup: $("onlySelfDup"),
@@ -374,6 +377,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         match: Object.assign({}, state.match),
         onlyNoNumber: state.onlyNoNumber,
         onlyNoName: state.onlyNoName,
+        onlyBig: state.onlyBig,
         onlySelfDup: state.onlySelfDup,
       },
     );
@@ -543,9 +547,11 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         phone: m.phone !== false,
         name: m.name !== false,
         email: m.email !== false,
+        org: m.org === true,
       },
       onlyNoNumber: !!data.onlyNoNumber,
       onlyNoName: !!data.onlyNoName,
+      onlyBig: !!data.onlyBig,
       onlySelfDup: !!data.onlySelfDup,
     };
   }
@@ -607,6 +613,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     state.match = core.match;
     state.onlyNoNumber = core.onlyNoNumber;
     state.onlyNoName = core.onlyNoName;
+    state.onlyBig = core.onlyBig;
     state.onlySelfDup = core.onlySelfDup;
     computeAllDuplicates();
     return true;
@@ -1376,7 +1383,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       phoneEntries: [],
       emails: [],
       rowLabel: "",
-      keys: { phone: [], email: [], name: [] },
+      keys: { phone: [], email: [], name: [], org: [] },
       selfDup: false,
       selfDupPhone: false,
       selfDupEmail: false,
@@ -1393,7 +1400,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     c.phoneEntries = [];
     c.emails = [];
     c.org = "";
-    c.keys = { phone: [], email: [], name: [] };
+    c.keys = { phone: [], email: [], name: [], org: [] };
     c.rowLabel = "";
     let fullName = "",
       surname = "";
@@ -1489,6 +1496,8 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     c.keys.phone = pKeys;
     c.keys.email = eKeys;
     c.keys.name = nKeys;
+    const orgKey = normName(c.org);
+    c.keys.org = orgKey ? [orgKey] : [];
     c.selfDupPhone = hasRepeatedKey(c.phones, normPhoneKey);
     c.selfDup = !!c.selfDupPhone;
     c.searchText = (
@@ -1592,7 +1601,8 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       });
     }
     groups.sort((a, b) => b.contacts.length - a.contacts.length);
-    return groups;
+    // "3+ contacts": hide groups with only two contacts.
+    return state.onlyBig ? groups.filter((g) => g.contacts.length >= 3) : groups;
   }
   function computeAllDuplicates() {
     state.groupsByList = new Map();
@@ -3266,6 +3276,14 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   bindMatch(els.matchPhone, "phone");
   bindMatch(els.matchName, "name");
   bindMatch(els.matchEmail, "email");
+  bindMatch(els.matchOrg, "org");
+  if (els.onlyBig)
+    els.onlyBig.addEventListener("change", () => {
+      state.onlyBig = els.onlyBig.checked;
+      computeAllDuplicates();
+      renderAll();
+      scheduleSave();
+    });
   if (els.onlyNoName)
     els.onlyNoName.addEventListener("change", () => {
       state.onlyNoName = els.onlyNoName.checked;
@@ -3415,6 +3433,8 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     if (els.matchPhone) els.matchPhone.checked = state.match.phone;
     if (els.matchName) els.matchName.checked = state.match.name;
     if (els.matchEmail) els.matchEmail.checked = state.match.email;
+    if (els.matchOrg) els.matchOrg.checked = state.match.org;
+    if (els.onlyBig) els.onlyBig.checked = state.onlyBig;
     if (els.onlyNoNumber) els.onlyNoNumber.checked = state.onlyNoNumber;
     if (els.onlyNoName) els.onlyNoName.checked = state.onlyNoName;
     if (els.onlySelfDup) els.onlySelfDup.checked = state.onlySelfDup;
