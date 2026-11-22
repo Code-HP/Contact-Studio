@@ -376,8 +376,11 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     );
   }
 
+  // Set while a reset is in progress, so unload saves can't write the data back.
+  let resetting = false;
   /* CRITICAL: always writes localStorage synchronously. No gating. */
   function saveStateNow(opts) {
+    if (resetting) return false;
     const payload = buildPayload();
     let lsOk = false,
       lsErr = null;
@@ -439,26 +442,32 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     }
     saveStateNow();
   }
+  // Resolves once both stores are cleared (or could not be opened).
   function clearStored() {
     if (localStorageOk)
       try {
         localStorage.removeItem(STORAGE_KEY);
       } catch (e) {}
-    if (indexedDbOk) {
-      idbOpen()
-        .then((db) => {
-          const tx = db.transaction(IDB_STORE, "readwrite");
-          tx.objectStore(IDB_STORE).delete(IDB_KEY);
-        })
-        .catch(() => {});
-    }
+    if (!indexedDbOk) return Promise.resolve();
+    return idbOpen()
+      .then(
+        (db) =>
+          new Promise((resolve) => {
+            const tx = db.transaction(IDB_STORE, "readwrite");
+            tx.objectStore(IDB_STORE).delete(IDB_KEY);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+            tx.onabort = () => resolve();
+          }),
+      )
+      .catch(() => {});
   }
 
   function resetMemory() {
     flushSave();
     const reset = () => {
-      clearStored();
-      window.location.reload();
+      resetting = true;
+      clearStored().then(() => window.location.reload());
     };
     if (typeof Swal !== "undefined") {
       Swal.fire({
