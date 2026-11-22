@@ -235,9 +235,11 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     return k;
   };
   // Name key that ignores word order and punctuation: "Smith John" == "John Smith".
+  // Needs at least two words ("Ann Lee"), so a bare first name never matches.
   const nameMatchKey = (v) => {
     const s = normNamePart(v);
-    return s ? s.split(" ").sort().join(" ") : "";
+    if (!s || s.split(" ").length < 2) return "";
+    return s.split(" ").sort().join(" ");
   };
   function hasRepeatedKey(list, normFn) {
     if (!list || list.length < 2) return false;
@@ -1508,6 +1510,12 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     c.phones.forEach((p) => {
       const k = normPhoneKey(p);
       if (k && pKeys.indexOf(k) === -1) pKeys.push(k);
+      // Also match on the last 7 digits, so a local number without an area
+      // code matches its full form.
+      if (k && k.length >= 7) {
+        const s7 = "s7:" + k.slice(-7);
+        if (pKeys.indexOf(s7) === -1) pKeys.push(s7);
+      }
     });
     c.emails.forEach((e) => {
       const k = normEmail(e);
