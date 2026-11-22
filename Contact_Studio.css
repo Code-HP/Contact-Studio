@@ -1908,3 +1908,24 @@ body {
     display: none;
   }
 }
+
+/* Duplicates filters sit under the search bar; Find duplicates opens the side panel. */
+.pane-head > .dupes-filters {
+  margin: 0 0 10px;
+}
+.apply-dupes-btn {
+  width: 100%;
+  height: 34px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--brand-2);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.apply-dupes-btn:hover {
+  filter: brightness(1.05);
+}

@@ -36,9 +36,9 @@ t("D2 placeholder phones do not group strangers", () => {
   const g = dupes([mk("Ann", "Lee", "0000000000", ""), mk("Bob", "Ray", "000-000-0000", "")]);
   assert.strictEqual(g.length, 0, "expected 0 groups, got " + g.length);
 });
-t("D3 same email groups", () => {
+t("D3 same email no longer groups (email matching removed)", () => {
   const g = dupes([mk("Ann", "Lee", "555-111-2222", "A@x.com"), mk("Anne", "Leigh", "555-333-4444", "a@x.COM")]);
-  assert.strictEqual(g.length, 1, "expected 1 group, got " + g.length);
+  assert.strictEqual(g.length, 0, "expected 0 groups, got " + g.length);
 });
 t("D4 reason label is lowercase key", () => {
   const g = dupes([mk("John", "Smith", "555-111-2222", ""), mk("John", "Smith", "555-999-0000", "")]);

@@ -43,7 +43,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     "Company",
     "Notes",
   ];
-  const MATCH_TYPES = ["phone", "name", "email", "org"];
+  const MATCH_TYPES = ["phone", "name"];
   const AUTO_LABEL_SEQUENCE = ["Main", "Work", "Home", "Other"];
   const REASON_LABEL = { phone: "Phone", name: "Name", email: "Email", org: "Org" };
   // Digit strings that are almost always placeholders, not real numbers.
@@ -3450,6 +3450,17 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   }
 
 
+  // The duplicates panel opens only when Find duplicates is pressed.
+  const applyDupesBtn = document.getElementById("applyDupes");
+  if (applyDupesBtn)
+    applyDupesBtn.addEventListener("click", () => {
+      els.dupesDrawer.hidden = false;
+      renderDupesDrawer();
+    });
+  if (els.dupesClose)
+    els.dupesClose.addEventListener("click", () => {
+      els.dupesDrawer.hidden = true;
+    });
   // Export the selected contacts as CSV.
   const exportSelBtn = document.querySelector('[data-export-sel="left"]');
   if (exportSelBtn)
