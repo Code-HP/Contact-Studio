@@ -748,7 +748,6 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: slideIn 0.22s ease-out;
 }
 .dupes-drawer[hidden] {
   display: none;
