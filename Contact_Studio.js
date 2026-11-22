@@ -2287,13 +2287,21 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     else chipData.push({ text: "No duplicate match", cls: "muted" });
     if (contact.selfDup)
       chipData.push({ text: "Self-duplicate · phone", cls: "self" });
-    chipData.push({
-      text:
-        (contact.phones.length || 0) +
-        " phone" +
-        (contact.phones.length === 1 ? "" : "s"),
-      cls: "plain",
+    // One badge per phone number, with its label (e.g. "+91… · Work").
+    const phoneBadges =
+      contact.phoneEntries && contact.phoneEntries.length
+        ? contact.phoneEntries
+        : (contact.phones || []).map((n) => ({ number: n, label: "" }));
+    phoneBadges.forEach((e) => {
+      chipData.push({
+        text:
+          e.number +
+          (e.label ? " · " + titleCasePhoneLabel(e.label) : ""),
+        cls: "plain",
+      });
     });
+    if (!phoneBadges.length)
+      chipData.push({ text: "No phone", cls: "muted" });
     chipData.push({
       text:
         (contact.emails.length || 0) +
