@@ -2430,9 +2430,29 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   let openLabelMenu = null;
   function closeLabelMenu() {
     if (!openLabelMenu) return;
-    openLabelMenu.menu.hidden = true;
-    openLabelMenu.trigger.setAttribute("aria-expanded", "false");
+    const { wrap, menu, trigger } = openLabelMenu;
+    menu.hidden = true;
+    menu.removeAttribute("style");
+    wrap.appendChild(menu);
+    trigger.setAttribute("aria-expanded", "false");
     openLabelMenu = null;
+  }
+  /* The open menu is moved to <body> and positioned against its trigger, so
+     the modal's scrolling body and footer can't clip it. It opens upward when
+     there is no room below. */
+  function openLabelMenuAt(trigger, menu) {
+    document.body.appendChild(menu);
+    menu.hidden = false;
+    menu.style.position = "fixed";
+    menu.style.zIndex = "1000";
+    const r = trigger.getBoundingClientRect();
+    menu.style.left = r.left + "px";
+    menu.style.width = r.width + "px";
+    menu.style.top = r.bottom + 4 + "px";
+    const h = menu.offsetHeight;
+    if (r.bottom + 4 + h > window.innerHeight - 8 && r.top - 4 - h > 8)
+      menu.style.top = r.top - 4 - h + "px";
+    trigger.setAttribute("aria-expanded", "true");
   }
   document.addEventListener("click", (e) => {
     if (openLabelMenu && !openLabelMenu.wrap.contains(e.target))
@@ -2441,6 +2461,9 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeLabelMenu();
   });
+  // Close on any scroll so the menu never sits away from its trigger.
+  document.addEventListener("scroll", closeLabelMenu, true);
+  window.addEventListener("resize", closeLabelMenu);
   function buildLabelPicker(select) {
     const wrap = document.createElement("div");
     wrap.className = "label-picker";
@@ -2482,8 +2505,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       const isOpen = openLabelMenu && openLabelMenu.menu === menu;
       closeLabelMenu();
       if (isOpen) return;
-      menu.hidden = false;
-      trigger.setAttribute("aria-expanded", "true");
+      openLabelMenuAt(trigger, menu);
       openLabelMenu = { wrap, menu, trigger };
     });
     select.hidden = true;
