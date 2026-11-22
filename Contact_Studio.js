@@ -2424,6 +2424,74 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     els.detailsBody.innerHTML = "";
     state.detailsContactSid = null;
   }
+
+  /* Custom dropdown for the phone label. The native <select> stays in the form
+     (hidden) so saving can still read its .value. */
+  let openLabelMenu = null;
+  function closeLabelMenu() {
+    if (!openLabelMenu) return;
+    openLabelMenu.menu.hidden = true;
+    openLabelMenu.trigger.setAttribute("aria-expanded", "false");
+    openLabelMenu = null;
+  }
+  document.addEventListener("click", (e) => {
+    if (openLabelMenu && !openLabelMenu.wrap.contains(e.target))
+      closeLabelMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeLabelMenu();
+  });
+  function buildLabelPicker(select) {
+    const wrap = document.createElement("div");
+    wrap.className = "label-picker";
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "label-picker-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+    const menu = document.createElement("div");
+    menu.className = "label-picker-menu";
+    menu.setAttribute("role", "listbox");
+    menu.hidden = true;
+    const sync = () => {
+      const opt = select.options[select.selectedIndex];
+      trigger.textContent = opt ? opt.textContent : "No label";
+      menu.querySelectorAll(".label-picker-option").forEach((b) => {
+        const on = b.dataset.value === select.value;
+        b.classList.toggle("selected", on);
+        b.setAttribute("aria-selected", String(on));
+      });
+    };
+    Array.from(select.options).forEach((o) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "label-picker-option";
+      b.setAttribute("role", "option");
+      b.dataset.value = o.value;
+      b.textContent = o.textContent;
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        select.value = o.value;
+        sync();
+        closeLabelMenu();
+      });
+      menu.appendChild(b);
+    });
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = openLabelMenu && openLabelMenu.menu === menu;
+      closeLabelMenu();
+      if (isOpen) return;
+      menu.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+      openLabelMenu = { wrap, menu, trigger };
+    });
+    select.hidden = true;
+    select.parentNode.insertBefore(wrap, select);
+    wrap.append(trigger, menu);
+    select.addEventListener("change", sync);
+    sync();
+  }
   function openContactModal(contactId, defaultListId) {
     const isEdit = contactId != null && contactId !== "";
     let columns = state.columns.slice(),
@@ -2586,9 +2654,13 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       row.querySelector(".phone-label-input").value =
         normalizePhoneLabel(entry.label) || "";
       row.querySelector(".phone-number-input").value = entry.number || "";
+      buildLabelPicker(row.querySelector(".phone-label-input"));
       row.querySelector(".phone-remove-btn").addEventListener("click", () => {
         if (list.children.length === 1) {
           row.querySelector(".phone-label-input").value = "";
+          row
+            .querySelector(".phone-label-input")
+            .dispatchEvent(new Event("change"));
           row.querySelector(".phone-number-input").value = "";
         } else row.remove();
       });
