@@ -17,6 +17,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     groupColors: new Map(),
     match: { phone: true, name: true, email: true },
     onlyNoNumber: false,
+    onlyNoName: false,
     onlySelfDup: false,
     activeGroup: null, // { id, listId } when a duplicate group is shown alone
     loadedName: "",
@@ -112,6 +113,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     matchName: $("matchName"),
     matchEmail: $("matchEmail"),
     onlyNoNumber: $("onlyNoNumber"),
+    onlyNoName: $("onlyNoName"),
     onlySelfDup: $("onlySelfDup"),
     contactModal: $("contactModal"),
     modalTitle: $("modalTitle"),
@@ -371,6 +373,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       {
         match: Object.assign({}, state.match),
         onlyNoNumber: state.onlyNoNumber,
+        onlyNoName: state.onlyNoName,
         onlySelfDup: state.onlySelfDup,
       },
     );
@@ -542,6 +545,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         email: m.email !== false,
       },
       onlyNoNumber: !!data.onlyNoNumber,
+      onlyNoName: !!data.onlyNoName,
       onlySelfDup: !!data.onlySelfDup,
     };
   }
@@ -602,6 +606,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     }
     state.match = core.match;
     state.onlyNoNumber = core.onlyNoNumber;
+    state.onlyNoName = core.onlyNoName;
     state.onlySelfDup = core.onlySelfDup;
     computeAllDuplicates();
     return true;
@@ -1459,6 +1464,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         if (!c.org) c.org = val;
       }
     }
+    c.noName = !(fullName || surname);
     // Matching uses first + surname only, so a middle name doesn't stop a match.
     const combined = [fullName, surname].filter(Boolean).join(" ").trim();
     const displayName = [fullName]
@@ -1650,6 +1656,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       )
         return false;
       if (state.onlyNoNumber && c.keys.phone.length > 0) return false;
+      if (state.onlyNoName && !c.noName) return false;
       if (state.onlySelfDup && !c.selfDup) return false;
       if (q && c.searchText.indexOf(q) === -1) return false;
       return true;
@@ -3259,6 +3266,12 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   bindMatch(els.matchPhone, "phone");
   bindMatch(els.matchName, "name");
   bindMatch(els.matchEmail, "email");
+  if (els.onlyNoName)
+    els.onlyNoName.addEventListener("change", () => {
+      state.onlyNoName = els.onlyNoName.checked;
+      renderAll();
+      scheduleSave();
+    });
   if (els.onlyNoNumber)
     els.onlyNoNumber.addEventListener("change", () => {
       state.onlyNoNumber = els.onlyNoNumber.checked;
@@ -3403,6 +3416,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     if (els.matchName) els.matchName.checked = state.match.name;
     if (els.matchEmail) els.matchEmail.checked = state.match.email;
     if (els.onlyNoNumber) els.onlyNoNumber.checked = state.onlyNoNumber;
+    if (els.onlyNoName) els.onlyNoName.checked = state.onlyNoName;
     if (els.onlySelfDup) els.onlySelfDup.checked = state.onlySelfDup;
     renderAll();
 

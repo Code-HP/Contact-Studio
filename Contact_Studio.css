@@ -812,10 +812,59 @@ body {
   text-transform: uppercase;
 }
 .dupes-filters {
-  margin: 0 14px 10px;
+  margin: 0 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filter-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.filter-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+.filter-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line-1);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-2);
+  cursor: pointer;
+  user-select: none;
+  transition: 0.15s;
+}
+.filter-chip:hover {
+  border-color: #cbd5e1;
+}
+.filter-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.filter-chip:has(input:checked) {
+  background: #eef2ff;
+  border-color: var(--brand-2);
+  color: var(--brand-2);
+}
+.filter-chip:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 .filter-pill {
   display: inline-flex;

@@ -109,29 +109,22 @@
           </div>
         </div>
         <div class="dupes-filters">
-          <label class="filter-pill"
-            ><input type="checkbox" id="matchPhone" checked /><span
-              >☎ Phone</span
-            ></label
-          >
-          <label class="filter-pill"
-            ><input type="checkbox" id="matchName" checked /><span
-              >A Name</span
-            ></label
-          >
-          <label class="filter-pill"
-            ><input type="checkbox" id="matchEmail" checked /><span
-              >✉ Email</span
-            ></label
-          >
-          <label class="filter-pill"
-            ><input type="checkbox" id="onlyNoNumber" /><span>No #</span></label
-          >
-          <label class="filter-pill"
-            ><input type="checkbox" id="onlySelfDup" /><span
-              >Same # twice</span
-            ></label
-          >
+          <div class="filter-group">
+            <span class="filter-label">Match by</span>
+            <div class="filter-row">
+              <label class="filter-chip"><input type="checkbox" id="matchPhone" checked /><span>Phone</span></label>
+              <label class="filter-chip"><input type="checkbox" id="matchName" checked /><span>Name</span></label>
+              <label class="filter-chip"><input type="checkbox" id="matchEmail" checked /><span>Email</span></label>
+            </div>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Show only</span>
+            <div class="filter-row">
+              <label class="filter-chip"><input type="checkbox" id="onlyNoNumber" /><span>No #</span></label>
+              <label class="filter-chip"><input type="checkbox" id="onlyNoName" /><span>No name</span></label>
+              <label class="filter-chip"><input type="checkbox" id="onlySelfDup" /><span>Same # twice</span></label>
+            </div>
+          </div>
         </div>
         <div class="dupes-list" id="dupesList"></div>
       </aside>
