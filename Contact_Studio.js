@@ -175,6 +175,17 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       .split(/\s*:::\s*|[;|\/\n,]+|\s{3,}/)
       .map((s) => s.trim())
       .filter(Boolean);
+  // Indian numbers without a country code get +91: a 10-digit number starting
+  // 6-9, or an 11-digit number with a leading 0 (e.g. 0 95-276-22377).
+  function addIndiaCode(n) {
+    const s = String(n || "").trim();
+    const d = s.replace(/\D+/g, "");
+    if (!d || /^\+/.test(s)) return s;
+    if (d.length === 10 && /^[6-9]/.test(d)) return "+91 " + s;
+    if (d.length === 11 && d[0] === "0" && /^[6-9]/.test(d.slice(1)))
+      return "+91 " + s.replace(/^\s*0\s*/, "");
+    return s;
+  }
   function cleanCellValue(v) {
     if (v == null) return "";
     if (typeof v === "number") {
@@ -1305,17 +1316,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     });
     // Phone cells may hold several numbers joined by " ::: " (Google/Outlook
     // exports). Store them as ", " so every view shows them as separate numbers.
-    // Indian numbers without a country code get +91: a 10-digit number starting
-    // 6-9, or an 11-digit number with a leading 0 (e.g. 0 95-276-22377).
-    const addIndiaCode = (n) => {
-      const s = String(n || "").trim();
-      const d = s.replace(/\D+/g, "");
-      if (!d || /^\+/.test(s)) return s;
-      if (d.length === 10 && /^[6-9]/.test(d)) return "+91 " + s;
-      if (d.length === 11 && d[0] === "0" && /^[6-9]/.test(d.slice(1)))
-        return "+91 " + s.replace(/^\s*0\s*/, "");
-      return s;
-    };
     const formatPhonePart = (part) => {
       const p = parseLabeledPhone(part);
       if (!p || !p.number) return String(part || "").trim();
@@ -2753,7 +2753,8 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         if (!raw) return;
         splitList(raw).forEach((part) => {
           if (part) {
-            numbers.push(label ? label + ": " + part : part);
+            const num = addIndiaCode(part);
+            numbers.push(label ? label + ": " + num : num);
             labels.push(label);
           }
         });
