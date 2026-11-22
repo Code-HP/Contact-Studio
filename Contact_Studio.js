@@ -2287,28 +2287,10 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     else chipData.push({ text: "No duplicate match", cls: "muted" });
     if (contact.selfDup)
       chipData.push({ text: "Self-duplicate · phone", cls: "self" });
-    // One badge per phone number, with its label (e.g. "+91… · Work").
-    const phoneBadges =
-      contact.phoneEntries && contact.phoneEntries.length
-        ? contact.phoneEntries
-        : (contact.phones || []).map((n) => ({ number: n, label: "" }));
-    phoneBadges.forEach((e) => {
-      chipData.push({
-        text:
-          e.number +
-          (e.label ? " · " + titleCasePhoneLabel(e.label) : ""),
-        cls: "plain",
-      });
-    });
-    if (!phoneBadges.length)
-      chipData.push({ text: "No phone", cls: "muted" });
-    chipData.push({
-      text:
-        (contact.emails.length || 0) +
-        " email" +
-        (contact.emails.length === 1 ? "" : "s"),
-      cls: "plain",
-    });
+    // List and organization shown as badges (replaces the separate cards).
+    chipData.push({ text: "List · " + listName(contact.listId), cls: "plain" });
+    if (contact.org)
+      chipData.push({ text: "Org · " + contact.org, cls: "plain" });
     chipData.forEach((item) => {
       const chip = document.createElement("span");
       chip.className = "details-chip " + item.cls;
@@ -2316,25 +2298,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       chips.appendChild(chip);
     });
     els.detailsBody.appendChild(chips);
-
-    const quick = document.createElement("div");
-    quick.className = "details-quick-grid";
-    [
-      ["List", listName(contact.listId)],
-      ["Group", group ? "G" + groupNumberInList(group.id) : "None"],
-      ["Organization", contact.org || "None"],
-    ].forEach((pair) => {
-      const card = document.createElement("div");
-      card.className = "details-quick-card";
-      card.innerHTML =
-        "<span>" +
-        escapeHtml(pair[0]) +
-        "</span><b>" +
-        escapeHtml(pair[1]).replace(/\n/g, "<br>") +
-        "</b>";
-      quick.appendChild(card);
-    });
-    els.detailsBody.appendChild(quick);
 
     const fieldCount = (() => {
       let n = 0;
