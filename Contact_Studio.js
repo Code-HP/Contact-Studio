@@ -391,10 +391,23 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     typeof BroadcastChannel !== "undefined"
       ? new BroadcastChannel("contact_studio_reset")
       : null;
+  let warnedOtherTab = false;
   if (resetChannel)
-    resetChannel.onmessage = () => {
-      resetting = true;
-      window.location.reload();
+    resetChannel.onmessage = (e) => {
+      if (e.data === "reset") {
+        resetting = true;
+        window.location.reload();
+      } else if (e.data === "ping") {
+        // Another tab just opened: answer so it can warn the user.
+        resetChannel.postMessage("pong");
+      } else if (e.data === "pong" && !warnedOtherTab) {
+        warnedOtherTab = true;
+        toast(
+          "Open in another tab",
+          "Edits in two tabs can overwrite each other. Keep only one tab open.",
+          "warning",
+        );
+      }
     };
   /* CRITICAL: always writes localStorage synchronously. No gating. */
   function saveStateNow(opts) {
@@ -480,6 +493,13 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   function resetMemory() {
     flushSave();
     const reset = () => {
+      // Download a backup first, so a mis-click can still be undone.
+      if (state.contacts.length)
+        downloadFile(
+          "contact-studio-backup-" + new Date().toISOString().slice(0, 10) + ".json",
+          JSON.stringify(buildPayload(), null, 2),
+          "application/json",
+        );
       resetting = true;
       // Erase first, then set a flag so the next load also erases any copy
       // that somehow survived, and restores nothing.
@@ -494,7 +514,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     if (typeof Swal !== "undefined") {
       Swal.fire({
         title: "Reset memory?",
-        text: "Clears saved contacts, lists, edits, filters and column settings in this browser.",
+        text: "Clears all saved contacts and settings in this browser. A backup file is downloaded first.",
         icon: "warning",
         showCancelButton: true,
         confirmButtonText: "Yes, reset memory",
@@ -1940,6 +1960,17 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         renderAll();
       });
       list.appendChild(clear);
+      const activeG = getGroups(state.activeGroup.listId).find(
+        (g) => g.id === state.activeGroup.id,
+      );
+      if (activeG) {
+        const merge = document.createElement("button");
+        merge.type = "button";
+        merge.className = "group-clear-btn";
+        merge.textContent = "⇉ Merge this group";
+        merge.addEventListener("click", () => mergeGroupNow(activeG));
+        list.appendChild(merge);
+      }
     }
     const curListId = state.panes.left.listId;
     if (!curListId) {
@@ -1955,6 +1986,12 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         "”</small></div></div>";
       return;
     }
+    const mergeAll = document.createElement("button");
+    mergeAll.type = "button";
+    mergeAll.className = "group-clear-btn";
+    mergeAll.textContent = "⇉ Merge all " + groups.length + " groups";
+    mergeAll.addEventListener("click", () => mergeAllGroupsNow());
+    list.appendChild(mergeAll);
     const frag = document.createDocumentFragment();
     groups.forEach((g, gi) => {
       const first = state.contacts[g.contacts[0]];
@@ -3155,6 +3192,106 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     renderAll();
     flushSave();
   }
+  /* Merges contacts (sids) into the first one: phone and email values are
+     combined without repeats, other empty fields are filled from the rest, and
+     the others are removed. Does not touch history; callers do that. */
+  function mergeRecords(sids) {
+    const list = sids
+      .map((sid) => state.contacts.find((c) => c._sid === sid))
+      .filter(Boolean);
+    if (list.length < 2) return false;
+    const primary = list[0];
+    const others = list.slice(1);
+    ["phone", "email"].forEach((field) => {
+      const cols = state.columns.filter(
+        (col) => (state.colMap[col] || detectField(col)) === field,
+      );
+      if (!cols.length) return;
+      const seen = new Set();
+      const parts = [];
+      list.forEach((c) =>
+        cols.forEach((col) =>
+          splitList(c.values[col]).forEach((p) => {
+            const key = field === "phone" ? normPhoneKey(p) || p : normEmail(p);
+            if (!key || seen.has(key)) return;
+            seen.add(key);
+            parts.push(p);
+          }),
+        ),
+      );
+      cols.forEach((col, i) => {
+        primary.values[col] = i === 0 ? parts.join(", ") : "";
+      });
+    });
+    state.columns.forEach((col) => {
+      const field = state.colMap[col] || detectField(col);
+      if (field === "phone" || field === "email") return;
+      if (String(primary.values[col] || "").trim()) return;
+      for (const c of others) {
+        const v = String(c.values[col] || "").trim();
+        if (v) {
+          primary.values[col] = v;
+          break;
+        }
+      }
+    });
+    const kill = new Set(others.map((c) => c._sid));
+    state.contacts = state.contacts.filter((c) => !kill.has(c._sid));
+    primary.editedAt = Date.now();
+    if (primary.editKind !== "added") primary.editKind = "edited";
+    rebuildContactDerived(primary, state.columns, state.colMap);
+    rebuildIds();
+    return true;
+  }
+  function mergeGroupNow(group) {
+    const sids = group.contacts
+      .map((ci) => state.contacts[ci] && state.contacts[ci]._sid)
+      .filter(Boolean);
+    if (sids.length < 2) return;
+    confirmAction({
+      title: "Merge " + sids.length + " contacts?",
+      html:
+        "Phone and email values are combined and the other " +
+        (sids.length - 1) +
+        " contact(s) are removed.<br>You can undo with <b>Ctrl+Z</b>.",
+      confirmText: "Merge",
+    }).then((ok) => {
+      if (!ok) return;
+      pushHistory();
+      mergeRecords(sids);
+      state.activeGroup = null;
+      computeAllDuplicates();
+      renderAll();
+      flushSave();
+      toast("Merged " + sids.length + " contacts", "Ctrl+Z to undo.", "success");
+    });
+  }
+  function mergeAllGroupsNow() {
+    const listId = state.panes.left.listId;
+    const allSids = getGroups(listId)
+      .map((g) =>
+        g.contacts.map((ci) => state.contacts[ci] && state.contacts[ci]._sid).filter(Boolean),
+      )
+      .filter((s) => s.length > 1);
+    if (!allSids.length) return;
+    const removed = allSids.reduce((n, s) => n + s.length - 1, 0);
+    confirmAction({
+      title: "Merge all " + allSids.length + " groups?",
+      html:
+        removed +
+        " duplicate contact(s) will be removed.<br>You can undo with <b>Ctrl+Z</b>.",
+      confirmText: "Merge all",
+    }).then((ok) => {
+      if (!ok) return;
+      pushHistory();
+      allSids.forEach((sids) => mergeRecords(sids));
+      state.activeGroup = null;
+      computeAllDuplicates();
+      renderAll();
+      flushSave();
+      toast("Merged " + allSids.length + " groups", "Ctrl+Z to undo.", "success");
+    });
+  }
   function deleteSingleContact(sid) {
     const c = state.contacts.find((x) => x._sid === sid);
     if (!c) return;
@@ -3452,4 +3589,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     }
   }
   init();
+  // Ask any other open tab to answer, so this tab can warn about it.
+  if (resetChannel) resetChannel.postMessage("ping");
 })();
