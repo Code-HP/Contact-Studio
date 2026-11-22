@@ -3097,7 +3097,8 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         "success",
       );
     };
-    openColumnMapping(parsed, name, (mappedColMap) => {
+    // No mapping step: the columns are auto-detected and the import goes straight in.
+    const importWith = (mappedColMap) => {
       if (state.contacts.length) {
         confirmAction({
           title: "Replace current data?",
@@ -3114,7 +3115,8 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
           if (ok) doApply(mappedColMap);
         });
       } else doApply(mappedColMap);
-    });
+    };
+    importWith(parsed.colMap);
   }
   const MAP_OPTIONS = [
     ["ignore", "Ignore"],
