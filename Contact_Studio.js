@@ -1303,6 +1303,13 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     Object.keys(src).forEach((k) => {
       values[k] = cleanCellValue(src[k]);
     });
+    // Phone cells may hold several numbers joined by " ::: " (Google/Outlook
+    // exports). Store them as ", " so every view shows them as separate numbers.
+    Object.keys(values).forEach((col) => {
+      const field = state.colMap[col] || detectField(col);
+      if (field === "phone" && values[col])
+        values[col] = String(values[col]).replace(/\s*:::\s*/g, ", ");
+    });
     const fallbackList =
       (entry && entry.listId) ||
       (state.lists[0] && state.lists[0].id) ||
