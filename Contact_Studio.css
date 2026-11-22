@@ -755,20 +755,28 @@ body {
   background: var(--surface-3);
   color: var(--brand-1);
 }
+/* Lists and the duplicates panel sit side by side; the panel is docked on the right. */
+.app-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.app-body > .split-workspace {
+  flex: 1;
+  min-width: 0;
+}
 .dupes-drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  flex: 0 0 340px;
   width: 340px;
-  max-width: 88vw;
+  min-height: 0;
   background: #fff;
   border-left: 1px solid var(--line-1);
-  box-shadow: -20px 0 60px rgba(15, 23, 42, 0.16);
-  z-index: 150;
   display: flex;
   flex-direction: column;
   animation: slideIn 0.22s ease-out;
+}
+.dupes-drawer[hidden] {
+  display: none;
 }
 .dupes-drawer[hidden] {
   display: none;
