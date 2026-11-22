@@ -111,8 +111,16 @@ body {
   display: flex;
   gap: 8px;
   align-items: center;
+  position: relative;
 }
 .save-status {
+  /* Floats under the buttons so showing it never moves the top-bar items. */
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  z-index: 20;
+  white-space: nowrap;
   font-size: 11px;
   font-weight: 800;
   padding: 6px 11px;
