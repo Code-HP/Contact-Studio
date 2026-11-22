@@ -735,12 +735,17 @@ body {
   flex: 1;
   min-width: 0;
 }
+/* Same card style as the contact list on the left. */
 .dupes-drawer {
   flex: 0 0 340px;
   width: 340px;
   min-height: 0;
+  margin: 14px 14px 14px 0;
   background: #fff;
-  border-left: 1px solid var(--line-1);
+  border: 1px solid var(--line-1);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(20, 32, 51, 0.04);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   animation: slideIn 0.22s ease-out;
