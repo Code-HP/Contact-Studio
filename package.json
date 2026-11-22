@@ -1,0 +1,7 @@
+{
+  "name": "contact-studio",
+  "private": true,
+  "scripts": {
+    "test": "bash tests/run.sh"
+  }
+}

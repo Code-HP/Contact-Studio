@@ -3022,6 +3022,35 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     };
     reader.readAsText(file);
   }
+  /* After an import, lists rows that may need a look: no name, no phone,
+     numbers that are too short, and short codes such as *121*1#. */
+  function reportImport() {
+    const contacts = state.contacts;
+    const noName = contacts.filter((c) => c.noName).length;
+    const noPhone = contacts.filter((c) => !c.phones.length).length;
+    const shortNumbers = contacts.filter((c) =>
+      c.phones.some((p) => p.replace(/\D+/g, "").length < 7),
+    ).length;
+    const codes = contacts.filter((c) => c.phones.some((p) => /[*#]/.test(p)))
+      .length;
+    const rows = [
+      ["Contacts imported", contacts.length],
+      ["No name", noName],
+      ["No phone number", noPhone],
+      ["Number too short", shortNumbers],
+      ["Short codes (e.g. *121*1#)", codes],
+    ];
+    const html = rows
+      .map((r) => r[0] + ": <b>" + r[1] + "</b>")
+      .join("<br>");
+    if (typeof Swal === "undefined") return;
+    Swal.fire({
+      title: "Import check",
+      html,
+      icon: noName + noPhone + shortNumbers + codes ? "info" : "success",
+      confirmButtonText: "OK",
+    });
+  }
   function applyParsedFile(parsed, name) {
     const doApply = (mappedColMap) => {
       pushHistory();
@@ -3046,6 +3075,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       computeAllDuplicates();
       renderAll();
       flushSave();
+      reportImport();
       toast(
         "Loaded " +
           state.contacts.length +

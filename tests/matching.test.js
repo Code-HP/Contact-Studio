@@ -1,0 +1,14 @@
+const m = require(process.argv[2]); const { state } = m; const assert = require("assert");
+state.lists=[{id:"list_1",name:"Main"}]; state.columns=["Name","Surname","Phone"]; state.colMap={Name:"name",Surname:"surname",Phone:"phone"};
+state.match={phone:true,name:true,email:true};
+const mk=(n,s,p,i)=>m.hydrateContact({values:{Name:n,Surname:s,Phone:p},listId:"list_1"},i);
+state.contacts=[mk("Ann","", "98223 22307",0), mk("Ann","", "+91 98223 22307",1)];
+state.contacts.forEach((c,i)=>c.id=i);
+const g1 = m.computeDuplicatesForList("list_1");
+console.log("bare first name + same phone groups:", g1.length, g1[0] ? g1[0].reasons : "");
+state.contacts=[mk("Ann","Lee","98223 22307",0), mk("Bob","Ray","+91 98223 22307",1)];
+state.contacts.forEach((c,i)=>c.id=i);
+console.log("different names, local vs full number groups:", m.computeDuplicatesForList("list_1").length);
+state.contacts=[mk("Ann","Lee","98223 22307",0), mk("Ann","Lee","+91 99999 88888",1)];
+state.contacts.forEach((c,i)=>c.id=i);
+console.log("same name, different numbers groups:", m.computeDuplicatesForList("list_1").length);
