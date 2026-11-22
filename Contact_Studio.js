@@ -1832,7 +1832,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         "text-align:center;padding:26px 16px;color:#94a3b8;font-size:11.5px;border-bottom:0";
       td.textContent =
         total === 0
-          ? "This list is empty — drag contacts here to add them."
+          ? "No contacts yet. Click Import to load a file, or ＋ to add one."
           : "No contacts match your filters.";
       tr.appendChild(td);
       pe.tbody.appendChild(tr);
@@ -1843,7 +1843,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         tr.dataset.id = String(c.id);
         tr.dataset.sid = c._sid || "";
         tr.dataset.listId = c.listId;
-        tr.draggable = true;
         if (c.selfDup) tr.classList.add("row-self-dup");
         if (c.editedAt && c.editKind === "edited")
           tr.classList.add("row-edited");
@@ -2000,6 +1999,17 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     mergeAll.textContent = "⇉ Merge all " + groups.length + " groups";
     mergeAll.addEventListener("click", () => mergeAllGroupsNow());
     list.appendChild(mergeAll);
+    const exportG = document.createElement("button");
+    exportG.type = "button";
+    exportG.className = "group-clear-btn";
+    exportG.textContent = "⇩ Export groups (CSV)";
+    exportG.addEventListener("click", () =>
+      exportContacts(
+        state.contacts.filter((c) => c.groupId && c.listId === curListId),
+        "csv",
+      ),
+    );
+    list.appendChild(exportG);
     const frag = document.createDocumentFragment();
     groups.forEach((g, gi) => {
       const first = state.contacts[g.contacts[0]];
@@ -3081,7 +3091,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
           state.contacts.length +
           " contact" +
           (state.contacts.length === 1 ? "" : "s"),
-        "Click ＋ New list above the right pane (or drag rows) to split.",
+        "Open Duplicates on the right to review matching contacts.",
         "success",
       );
     };
@@ -3440,6 +3450,26 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   }
 
 
+  // Export the selected contacts as CSV.
+  const exportSelBtn = document.querySelector('[data-export-sel="left"]');
+  if (exportSelBtn)
+    exportSelBtn.addEventListener("click", () => {
+      const sel = state.panes.left.selectedSids;
+      exportContacts(
+        state.contacts.filter((c) => sel.has(c._sid)),
+        "csv",
+      );
+    });
+  // Ctrl/Cmd+F jumps to the search box instead of the browser's find.
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
+      const s = document.querySelector('[data-pane-search="left"]');
+      if (!s) return;
+      e.preventDefault();
+      s.focus();
+      s.select();
+    }
+  });
   const bindMatch = (el, key) =>
     el &&
     el.addEventListener("change", () => {
