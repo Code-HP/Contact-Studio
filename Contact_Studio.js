@@ -383,6 +383,17 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
 
   // Set while a reset is in progress, so unload saves can't write the data back.
   let resetting = false;
+  // Other open tabs of this app hold the old data in memory and would save it
+  // again. A reset tells them to stop saving and reload with nothing.
+  const resetChannel =
+    typeof BroadcastChannel !== "undefined"
+      ? new BroadcastChannel("contact_studio_reset")
+      : null;
+  if (resetChannel)
+    resetChannel.onmessage = () => {
+      resetting = true;
+      window.location.reload();
+    };
   /* CRITICAL: always writes localStorage synchronously. No gating. */
   function saveStateNow(opts) {
     if (resetting) return false;
@@ -474,6 +485,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         try {
           localStorage.setItem("cdf.wipe", "1");
         } catch (e) {}
+        if (resetChannel) resetChannel.postMessage("reset");
         window.location.reload();
       });
     };
