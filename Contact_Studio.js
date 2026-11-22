@@ -284,7 +284,12 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         if (!db.objectStoreNames.contains(IDB_STORE))
           db.createObjectStore(IDB_STORE);
       };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const db = req.result;
+        // If another tab asks to delete the database (Reset), let go of it at once.
+        db.onversionchange = () => db.close();
+        resolve(db);
+      };
       req.onerror = () => reject(req.error);
     });
   }
@@ -442,35 +447,35 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     }
     saveStateNow();
   }
-  // Resolves once both stores are cleared (or could not be opened).
+  /* Erases everything this app stores in this browser: local and session
+     storage, and the whole IndexedDB database. Resolves when done. */
   function clearStored() {
-    if (localStorageOk)
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch (e) {}
+    try {
+      localStorage.clear();
+    } catch (e) {}
+    try {
+      sessionStorage.clear();
+    } catch (e) {}
     if (!indexedDbOk) return Promise.resolve();
-    return idbOpen()
-      .then(
-        (db) =>
-          new Promise((resolve) => {
-            const tx = db.transaction(IDB_STORE, "readwrite");
-            tx.objectStore(IDB_STORE).delete(IDB_KEY);
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => resolve();
-            tx.onabort = () => resolve();
-          }),
-      )
-      .catch(() => {});
+    return new Promise((resolve) => {
+      const req = indexedDB.deleteDatabase(IDB_NAME);
+      req.onsuccess = () => resolve();
+      req.onerror = () => resolve();
+    });
   }
 
   function resetMemory() {
     flushSave();
     const reset = () => {
       resetting = true;
-      try {
-        localStorage.setItem("cdf.wipe", "1");
-      } catch (e) {}
-      clearStored().then(() => window.location.reload());
+      // Erase first, then set a flag so the next load also erases any copy
+      // that somehow survived, and restores nothing.
+      clearStored().then(() => {
+        try {
+          localStorage.setItem("cdf.wipe", "1");
+        } catch (e) {}
+        window.location.reload();
+      });
     };
     if (typeof Swal !== "undefined") {
       Swal.fire({
@@ -633,23 +638,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     return !!(lsData && lsData.v === STORAGE_VERSION);
   }
 
-  window.addEventListener("storage", (e) => {
-    if (e.key !== STORAGE_KEY || !e.newValue) return;
-    try {
-      const data = JSON.parse(e.newValue);
-      if (!els.contactModal.hidden || !els.detailsModal.hidden) return;
-      // Unsaved local edits win: they will be written shortly anyway.
-      if (saveTimer) return;
-      if (applyLoadedData(data)) {
-        // Undo snapshots predate the other tab's changes; restoring one would
-        // silently revert them, so start a fresh history after a sync.
-        history.undo.length = 0;
-        history.redo.length = 0;
-        renderAll();
-        setSaveStatus("ok", "✓ Synced from another tab", true);
-      }
-    } catch (_) {}
-  });
+  // This tab does not read data from other tabs: no "storage" sync listener.
 
   /* ========== 6. FIELD DETECTION ========== */
   function detectField(colName) {
