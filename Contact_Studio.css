@@ -766,14 +766,17 @@ body {
     opacity: 1;
   }
 }
+/* Header box matches the "Main" title box on the left. */
 .dupes-head {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--line-1);
+  margin: 14px 14px 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-1);
+  border-radius: 9px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
-  background: linear-gradient(180deg, #fdfdff 0%, #f7f9fe 100%);
+  background: linear-gradient(180deg, #fbfcff 0%, #f5f8ff 100%);
 }
 .dupes-head h3 {
   margin: 2px 0 0;
@@ -802,11 +805,10 @@ body {
   text-transform: uppercase;
 }
 .dupes-filters {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--line-1);
+  margin: 0 14px 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 6px;
 }
 .filter-pill {
   display: inline-flex;
@@ -834,7 +836,7 @@ body {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 10px;
+  padding: 0 14px 14px;
 }
 .dupes-list .sb-empty {
   min-height: 150px;
