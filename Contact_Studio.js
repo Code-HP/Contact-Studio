@@ -23,7 +23,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     editingId: null,
     editingListId: null,
     detailsContactSid: null,
-    dragSourceSide: null,
   };
 
   /* ========== 2. CONSTANTS ========== */
@@ -132,10 +131,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   };
   const paneEls = (side) => ({
     wrap: document.querySelector('[data-pane="' + side + '"]'),
-    selector: document.querySelector(
-      '[data-pane="' + side + '"] .list-selector',
-    ),
-    deleteListBtn: document.querySelector('[data-delete-list="' + side + '"]'),
     count: document.querySelector('[data-pane-count="' + side + '"]'),
     search: document.querySelector('[data-pane-search="' + side + '"]'),
     addBtn: document.querySelector('[data-add-pane="' + side + '"]'),
@@ -143,7 +138,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     exportMenu: document.querySelector('[data-export-menu="' + side + '"]'),
     selBar: document.querySelector('[data-pane-sel="' + side + '"]'),
     selCount: document.querySelector('[data-pane-sel-count="' + side + '"]'),
-    moveSelBtn: document.querySelector('[data-move-sel="' + side + '"]'),
     delSelBtn: document.querySelector('[data-del-sel="' + side + '"]'),
     clearSelBtn: document.querySelector('[data-clear-sel="' + side + '"]'),
     body: document.querySelector('[data-pane-body="' + side + '"]'),
@@ -1755,43 +1749,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   function renderPane(side) {
     const pe = paneEls(side);
     const pane = state.panes[side];
-
-    // The left pane is a fixed "Main" label with no <select>, so skip the
-    // selector there. A missing element must never abort the whole render.
-    if (pe.selector) {
-      pe.selector.innerHTML = "";
-      state.lists.forEach((l) => {
-        const opt = document.createElement("option");
-        opt.value = l.id;
-        const other =
-          side === "left" ? state.panes.right.listId : state.panes.left.listId;
-        opt.textContent =
-          l.name +
-          " (" +
-          countContactsInList(l.id) +
-          ")" +
-          (other === l.id
-            ? " — shown " + (side === "left" ? "right" : "left")
-            : "");
-        opt.disabled = other === l.id;
-        pe.selector.appendChild(opt);
-      });
-      const newOpt = document.createElement("option");
-      newOpt.value = "__new__";
-      newOpt.textContent = "＋ Create new list…";
-      pe.selector.appendChild(newOpt);
-      if (pane.listId && state.lists.some((l) => l.id === pane.listId))
-        pe.selector.value = pane.listId;
-    }
-
-    if (pe.deleteListBtn) {
-      const canDelete = state.lists.length > 1 && !!pane.listId;
-      pe.deleteListBtn.disabled = !canDelete;
-      pe.deleteListBtn.title = canDelete
-        ? "Delete list “" + listName(pane.listId) + "”"
-        : "Can't delete — at least one list is required";
-    }
-
     const total = pane.listId ? countContactsInList(pane.listId) : 0;
     const visible = getPaneContacts(side).length;
     pe.count.textContent =
@@ -1928,30 +1885,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
           openContactModal(c._sid);
         });
 
-        tr.addEventListener("dragstart", (e) => {
-          const sids = pane.selectedSids.has(c._sid)
-            ? Array.from(pane.selectedSids)
-            : [c._sid];
-          try {
-            e.dataTransfer.setData(
-              "application/x-cdf-sids",
-              JSON.stringify(sids),
-            );
-            e.dataTransfer.setData("text/plain", JSON.stringify(sids));
-            e.dataTransfer.effectAllowed = "move";
-          } catch (_) {}
-          state.dragSourceSide = side;
-          tr.classList.add("dragging");
-          if (pe.wrap) pe.wrap.style.opacity = "0.55";
-        });
-        tr.addEventListener("dragend", () => {
-          tr.classList.remove("dragging");
-          state.dragSourceSide = null;
-          if (pe.wrap) pe.wrap.style.opacity = "";
-          document
-            .querySelectorAll(".contact-pane.drag-over")
-            .forEach((p) => p.classList.remove("drag-over"));
-        });
 
         frag.appendChild(tr);
       }
@@ -2073,185 +2006,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     )
       state.activeGroup = null;
     renderPane("left");
-    renderPane("right");
     renderDupesDrawer();
-  }
-
-  /* ========== 14. LIST OPS ========== */
-  function readDragSids(e) {
-    try {
-      let txt = "";
-      try {
-        txt = e.dataTransfer.getData("application/x-cdf-sids");
-      } catch (_) {}
-      if (!txt)
-        try {
-          txt = e.dataTransfer.getData("text/plain");
-        } catch (_) {}
-      if (!txt) return [];
-      const arr = JSON.parse(txt);
-      return Array.isArray(arr) ? arr.filter(Boolean) : [];
-    } catch (_) {
-      return [];
-    }
-  }
-  function moveSidsToList(sids, targetListId, sourceSide) {
-    const set = new Set(sids);
-    let moved = 0;
-    state.contacts.forEach((c) => {
-      if (set.has(c._sid)) {
-        c.listId = targetListId;
-        c.groupId = null;
-        moved++;
-      }
-    });
-    if (!moved) return;
-    pushHistory();
-    if (sourceSide) state.panes[sourceSide].selectedSids.clear();
-    computeAllDuplicates();
-    renderAll();
-    flushSave();
-    toast(
-      "Moved " + moved + " contact" + (moved === 1 ? "" : "s"),
-      "→ “" + listName(targetListId) + "”",
-      "success",
-    );
-  }
-  function moveSidsToNewList(sids, targetSide, sourceSide) {
-    if (!sids.length) return;
-    const id =
-      "list_" +
-      Date.now().toString(36) +
-      Math.random().toString(36).slice(2, 5);
-    const base = "List ";
-    let n = state.lists.length + 1,
-      name = base + n;
-    while (state.lists.some((l) => l.name === name)) {
-      n++;
-      name = base + n;
-    }
-    state.lists.push({ id, name });
-    const set = new Set(sids);
-    let moved = 0;
-    state.contacts.forEach((c) => {
-      if (set.has(c._sid)) {
-        c.listId = id;
-        c.groupId = null;
-        moved++;
-      }
-    });
-    if (!moved) {
-      state.lists.pop();
-      return;
-    }
-    pushHistory();
-    if (targetSide) state.panes[targetSide].listId = id;
-    if (sourceSide) state.panes[sourceSide].selectedSids.clear();
-    computeAllDuplicates();
-    renderAll();
-    flushSave();
-    toast(
-      "Split " + moved + " contact" + (moved === 1 ? "" : "s"),
-      "New list “" + name + "” created.",
-      "success",
-    );
-  }
-  function deleteList(listId) {
-    if (state.lists.length <= 1) {
-      toast("Can't delete the last list", "Create another first.", "info");
-      return;
-    }
-    const l = state.lists.find((x) => x.id === listId);
-    if (!l) return;
-    const count = countContactsInList(listId);
-    const doDelete = () => {
-      pushHistory();
-      const fallback = state.lists.find((x) => x.id !== listId).id;
-      state.contacts.forEach((c) => {
-        if (c.listId === listId) c.listId = fallback;
-      });
-      state.lists = state.lists.filter((x) => x.id !== listId);
-      if (state.panes.left.listId === listId)
-        state.panes.left.listId = fallback;
-      if (state.panes.right.listId === listId) {
-        const others = state.lists.filter(
-          (x) => x.id !== state.panes.left.listId,
-        );
-        state.panes.right.listId = others[0] ? others[0].id : null;
-      }
-      computeAllDuplicates();
-      renderAll();
-      flushSave();
-      toast(
-        "List deleted",
-        count + " contact(s) moved to “" + listName(fallback) + "”.",
-        "success",
-      );
-    };
-    if (typeof Swal !== "undefined") {
-      Swal.fire({
-        title: "Delete “" + l.name + "”?",
-        html:
-          "Its <b>" +
-          count +
-          "</b> contact(s) will be moved to the first remaining list.<br>You can undo with <b>Ctrl+Z</b>.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Delete list",
-        cancelButtonText: "Cancel",
-        reverseButtons: true,
-        focusCancel: true,
-      }).then((r) => {
-        if (r.isConfirmed) doDelete();
-      });
-    } else if (
-      window.confirm(
-        "Delete list “" + l.name + "”? " + count + " contacts will be moved.",
-      )
-    )
-      doDelete();
-  }
-  function createAndAssignList(side) {
-    const create = (name) => {
-      const id =
-        "list_" +
-        Date.now().toString(36) +
-        Math.random().toString(36).slice(2, 5);
-      state.lists.push({ id, name: name });
-      state.panes[side].listId = id;
-      state.panes[side].search = "";
-      computeAllDuplicates();
-      renderAll();
-      flushSave();
-    };
-    if (typeof Swal !== "undefined") {
-      Swal.fire({
-        title: "New list name",
-        input: "text",
-        inputValue: "List " + (state.lists.length + 1),
-        showCancelButton: true,
-        confirmButtonText: "Create",
-        cancelButtonText: "Cancel",
-        reverseButtons: true,
-        inputValidator: (v) => (!v || !v.trim() ? "Please enter a name" : null),
-      }).then((r) => {
-        if (!r.isConfirmed) {
-          renderPane(side);
-          return;
-        }
-        create(r.value.trim());
-      });
-    } else {
-      const name = window.prompt(
-        "New list name",
-        "List " + (state.lists.length + 1),
-      );
-      if (!name) {
-        renderPane(side);
-        return;
-      }
-      create(name.trim());
-    }
   }
 
   /* ========== 15. MODALS ========== */
@@ -2335,8 +2090,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       '<div class="details-meta">Record #' +
       (contact.id + 1) +
       (state.loadedName ? " · " + escapeHtml(state.loadedName) : "") +
-      " · " +
-      escapeHtml(listName(contact.listId)) +
       (contact.org ? " · " + escapeHtml(contact.org) : "") +
       "</div></div>";
     els.detailsBody.appendChild(head);
@@ -2356,8 +2109,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     else chipData.push({ text: "No duplicate match", cls: "muted" });
     if (contact.selfDup)
       chipData.push({ text: "Self-duplicate · phone", cls: "self" });
-    // List and organization shown as badges (replaces the separate cards).
-    chipData.push({ text: "List · " + listName(contact.listId), cls: "plain" });
+    // Organization shown as a badge.
     if (contact.org)
       chipData.push({ text: "Org · " + contact.org, cls: "plain" });
     chipData.forEach((item) => {
@@ -3416,48 +3168,11 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     if (f) loadFile(f);
   });
 
-  ["left", "right"].forEach((side) => {
+  {
+    const side = "left";
     const pe = paneEls(side);
 
-    if (pe.selector) pe.selector.addEventListener("change", () => {
-      const v = pe.selector.value;
-      if (v === "__new__") {
-        createAndAssignList(side);
-        return;
-      }
-      const otherSide = side === "left" ? "right" : "left";
-      if (state.panes[otherSide].listId === v) {
-        const old = state.panes[side].listId;
-        state.panes[side].listId = v;
-        state.panes[otherSide].listId = old;
-      } else {
-        state.panes[side].listId = v;
-      }
-      state.panes[side].selectedSids.clear();
-      state.panes[side].search = "";
-      renderAll();
-      scheduleSave();
-    });
 
-    if (pe.deleteListBtn) {
-      pe.deleteListBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const listId = state.panes[side].listId;
-        if (!listId) {
-          toast("No list selected", "", "info");
-          return;
-        }
-        if (state.lists.length <= 1) {
-          toast(
-            "Can't delete the last list",
-            "Create another list first.",
-            "info",
-          );
-          return;
-        }
-        deleteList(listId);
-      });
-    }
 
     pe.search.addEventListener("input", () => {
       state.panes[side].search = pe.search.value;
@@ -3485,14 +3200,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       closeAllMenus();
     });
 
-    pe.moveSelBtn.addEventListener("click", () => {
-      const sids = Array.from(state.panes[side].selectedSids);
-      if (!sids.length) return;
-      const otherSide = side === "left" ? "right" : "left";
-      const targetListId = state.panes[otherSide].listId;
-      if (targetListId) moveSidsToList(sids, targetListId, side);
-      else moveSidsToNewList(sids, otherSide, side);
-    });
     pe.delSelBtn.addEventListener("click", () => {
       const sids = Array.from(state.panes[side].selectedSids);
       if (!sids.length) return;
@@ -3538,44 +3245,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       openContactDetails(sid);
     });
 
-    const paneWrap = pe.wrap;
-    const paneAcceptsRowDrop = (e) => {
-      const dt = e.dataTransfer;
-      if (!dt) return false;
-      const types = Array.prototype.slice.call(dt.types || []);
-      return types.indexOf("Files") === -1;
-    };
-
-    paneWrap.addEventListener("dragover", (e) => {
-      if (!paneAcceptsRowDrop(e)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-      if (state.dragSourceSide !== side) paneWrap.classList.add("drag-over");
-    });
-    paneWrap.addEventListener("dragleave", (e) => {
-      if (!e.relatedTarget || !paneWrap.contains(e.relatedTarget)) {
-        paneWrap.classList.remove("drag-over");
-      }
-    });
-    paneWrap.addEventListener("drop", (e) => {
-      if (!paneAcceptsRowDrop(e)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      paneWrap.classList.remove("drag-over");
-      const sids = readDragSids(e);
-      if (!sids.length) {
-        toast("Couldn't read drag data", "Try dragging again.", "warning");
-        return;
-      }
-      const sourceSide = state.dragSourceSide;
-      if (sourceSide === side) return;
-      const targetListId = state.panes[side].listId;
-      if (sourceSide && state.panes[sourceSide].listId === targetListId) return;
-      if (targetListId) moveSidsToList(sids, targetListId, sourceSide);
-      else moveSidsToNewList(sids, side, sourceSide);
-    });
-  });
+  }
 
   if (els.toggleDupesBtn) {
     els.toggleDupesBtn.addEventListener("click", () => {
@@ -3592,9 +3262,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     });
   }
 
-  const newListBtn = document.getElementById("newListBtn");
-  if (newListBtn)
-    newListBtn.addEventListener("click", () => createAndAssignList("right"));
   const bindMatch = (el, key) =>
     el &&
     el.addEventListener("change", () => {
