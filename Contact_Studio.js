@@ -18,6 +18,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     match: { phone: true, name: true, email: true },
     onlyNoNumber: false,
     onlySelfDup: false,
+    activeGroup: null, // { id, listId } when a duplicate group is shown alone
     loadedName: "",
     editingId: null,
     editingListId: null,
@@ -1648,6 +1649,12 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     const q = (pane.search || "").trim().toLowerCase();
     return state.contacts.filter((c) => {
       if (c.listId !== listId) return false;
+      if (
+        state.activeGroup &&
+        c.listId === state.activeGroup.listId &&
+        c.groupId !== state.activeGroup.id
+      )
+        return false;
       if (state.onlyNoNumber && c.keys.phone.length > 0) return false;
       if (state.onlySelfDup && !c.selfDup) return false;
       if (q && c.searchText.indexOf(q) === -1) return false;
@@ -1973,6 +1980,17 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     if (!drawer || drawer.hidden) return;
     const list = els.dupesList;
     list.innerHTML = "";
+    if (state.activeGroup) {
+      const clear = document.createElement("button");
+      clear.type = "button";
+      clear.className = "group-clear-btn";
+      clear.textContent = "✕ Show all contacts";
+      clear.addEventListener("click", () => {
+        state.activeGroup = null;
+        renderAll();
+      });
+      list.appendChild(clear);
+    }
     const curListId = state.panes.left.listId;
     if (!curListId) {
       list.innerHTML =
@@ -1992,7 +2010,9 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       const first = state.contacts[g.contacts[0]];
       const extra = g.contacts.length - 1;
       const card = document.createElement("div");
-      card.className = "group-card";
+      card.className =
+        "group-card" +
+        (state.activeGroup && state.activeGroup.id === g.id ? " active" : "");
       card.style.setProperty("--g", g.color);
       const head = document.createElement("div");
       head.className = "gc-head";
@@ -2033,29 +2053,30 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         body.appendChild(badges);
       }
       card.appendChild(body);
+      // Click toggles this group: show only its contacts in the list, or show all again.
       card.addEventListener("click", () => {
-        const side =
-          state.panes.left.listId === curListId
-            ? "left"
-            : state.panes.right.listId === curListId
-              ? "right"
-              : null;
-        if (!side) return;
-        const firstC = state.contacts[g.contacts[0]];
-        if (!firstC) return;
-        const pe = paneEls(side);
-        const tr = pe.tbody.querySelector('tr[data-sid="' + firstC._sid + '"]');
-        if (tr && tr.scrollIntoView)
-          tr.scrollIntoView({ block: "center", behavior: "smooth" });
-        openContactDetails(firstC._sid);
+        const on = state.activeGroup && state.activeGroup.id === g.id;
+        state.activeGroup = on ? null : { id: g.id, listId: curListId };
+        renderAll();
       });
       frag.appendChild(card);
     });
     list.appendChild(frag);
   }
   function renderAll() {
+    // Drop the group filter if that group no longer exists after an edit.
+    if (
+      state.activeGroup &&
+      !getGroups(state.activeGroup.listId).some(
+        (g) => g.id === state.activeGroup.id,
+      )
+    )
+      state.activeGroup = null;
     renderPane("left");
     renderPane("right");
+    const workspace = document.querySelector(".split-workspace");
+    if (workspace)
+      workspace.classList.toggle("right-hidden", !state.panes.right.listId);
     renderDupesDrawer();
   }
 
@@ -3574,6 +3595,9 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     });
   }
 
+  const newListBtn = document.getElementById("newListBtn");
+  if (newListBtn)
+    newListBtn.addEventListener("click", () => createAndAssignList("right"));
   const bindMatch = (el, key) =>
     el &&
     el.addEventListener("change", () => {
