@@ -1210,33 +1210,11 @@ body {
   border-radius: 8px;
   background: #fff;
   padding: 0 9px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
+  font: 500 12px inherit;
   color: var(--ink-1);
   outline: none;
   width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
   transition: 0.15s;
-}
-/* Custom dropdown look: no native arrow, our own chevron, same height as the input. */
-.phone-label-input {
-  -webkit-appearance: none;
-  appearance: none;
-  cursor: pointer;
-  padding-right: 28px;
-  background-color: #fff;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2364748b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-}
-.phone-label-input:hover {
-  border-color: #cbd5e1;
-}
-.phone-label-input option {
-  color: var(--ink-1);
-  background: #fff;
 }
 .phone-label-input:focus,
 .phone-number-input:focus {
