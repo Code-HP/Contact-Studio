@@ -467,6 +467,9 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     flushSave();
     const reset = () => {
       resetting = true;
+      try {
+        localStorage.setItem("cdf.wipe", "1");
+      } catch (e) {}
       clearStored().then(() => window.location.reload());
     };
     if (typeof Swal !== "undefined") {
@@ -593,6 +596,16 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
   }
 
   function loadStoredState() {
+    // A reset was requested (flag written synchronously before reload): wipe the
+    // IndexedDB backup as well and restore nothing.
+    if (localStorageOk && localStorage.getItem("cdf.wipe")) {
+      clearStored().then(() => {
+        try {
+          localStorage.removeItem("cdf.wipe");
+        } catch (e) {}
+      });
+      return false;
+    }
     let lsData = null;
     if (localStorageOk) {
       try {
