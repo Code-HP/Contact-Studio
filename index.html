@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contact Studio — Split View</title>
+    <link rel="stylesheet" href="Contact_Studio.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="appbar">
+        <div class="brand-block">
+          <div class="brand-mark">C</div>
+          <div>
+            <div class="brand-title">Contact Studio</div>
+            <div class="brand-subtitle">
+              Main list on the left · Split into new lists on the right ·
+              Auto-saved
+            </div>
+          </div>
+        </div>
+        <div class="top-actions">
+          <div class="save-status" id="saveStatus" hidden>✓ Saved</div>
+          <button type="button" class="top-btn" id="toggleDupesBtn">
+            ▤ Duplicates
+          </button>
+          <button type="button" class="top-btn danger" id="resetMemoryBtn">
+            ↺ Reset
+          </button>
+          <label class="top-btn primary">
+            <input
+              type="file"
+              id="fileInput"
+              hidden
+              accept=".csv,.tsv,.txt,.vcf,.vcard,.json,.xlsx,.xls,.xlsm,.xlsb,.ods,text/csv,text/vcard,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            />
+            <span>＋ Import</span>
+          </label>
+        </div>
+      </header>
+
+      <main class="split-workspace">
+        <!-- LEFT PANE — fixed "Main" list -->
+        <section class="contact-pane" data-pane="left">
+          <div class="pane-head">
+            <div class="pane-title-row">
+              <div class="list-static-label">
+                <span class="lsl-icon">★</span>
+                <span class="lsl-name">Main</span>
+                <span class="lsl-badge">imported</span>
+              </div>
+              <span class="pane-count" data-pane-count="left">0 contacts</span>
+            </div>
+            <div class="pane-toolbar">
+              <div class="search-wrap">
+                <span>⌕</span>
+                <input
+                  type="search"
+                  data-pane-search="left"
+                  placeholder="Search Main…"
+                  autocomplete="off"
+                />
+              </div>
+              <button
+                type="button"
+                class="tool-btn add-btn"
+                data-add-pane="left"
+                title="Add contact to Main"
+              >
+                ＋
+              </button>
+              <div class="export-dropdown">
+                <button
+                  type="button"
+                  class="tool-btn"
+                  data-export-pane="left"
+                  title="Export Main"
+                >
+                  ⇩
+                </button>
+                <div class="export-menu" data-export-menu="left" hidden>
+                  <div class="export-menu-title">Export this list</div>
+                  <button type="button" data-export-format="csv">CSV</button>
+                  <button type="button" data-export-format="tsv">TSV</button>
+                  <button type="button" data-export-format="json">JSON</button>
+                  <button type="button" data-export-format="vcf">vCard</button>
+                </div>
+              </div>
+            </div>
+            <div class="selection-bar" data-pane-sel="left" hidden>
+              <span class="sel-count" data-pane-sel-count="left"
+                >0 selected</span
+              >
+              <button
+                type="button"
+                class="tool-btn move-btn"
+                data-move-sel="left"
+              >
+                ⇢ Move to right list
+              </button>
+              <button type="button" class="tool-btn" data-del-sel="left">
+                Delete
+              </button>
+              <button type="button" class="tool-btn" data-clear-sel="left">
+                Clear
+              </button>
+            </div>
+          </div>
+          <div class="pane-body" data-pane-body="left">
+            <table class="compact-table">
+              <thead data-pane-thead="left"></thead>
+              <tbody data-pane-tbody="left"></tbody>
+            </table>
+            <div class="pane-drop-hint" data-pane-hint="left" hidden></div>
+          </div>
+        </section>
+
+        <!-- RIGHT PANE — creates/manages alternate lists -->
+        <section class="contact-pane" data-pane="right">
+          <div class="pane-head">
+            <div class="pane-title-row">
+              <select class="list-selector" data-pane="right"></select>
+              <button
+                type="button"
+                class="list-delete-btn"
+                data-delete-list="right"
+                title="Delete this list"
+              >
+                🗑
+              </button>
+              <span class="pane-count" data-pane-count="right">0 contacts</span>
+            </div>
+            <div class="pane-toolbar">
+              <div class="search-wrap">
+                <span>⌕</span>
+                <input
+                  type="search"
+                  data-pane-search="right"
+                  placeholder="Search this list…"
+                  autocomplete="off"
+                />
+              </div>
+              <button
+                type="button"
+                class="tool-btn add-btn"
+                data-add-pane="right"
+                title="Add contact to this list"
+              >
+                ＋
+              </button>
+              <div class="export-dropdown">
+                <button
+                  type="button"
+                  class="tool-btn"
+                  data-export-pane="right"
+                  title="Export this list"
+                >
+                  ⇩
+                </button>
+                <div class="export-menu" data-export-menu="right" hidden>
+                  <div class="export-menu-title">Export this list</div>
+                  <button type="button" data-export-format="csv">CSV</button>
+                  <button type="button" data-export-format="tsv">TSV</button>
+                  <button type="button" data-export-format="json">JSON</button>
+                  <button type="button" data-export-format="vcf">vCard</button>
+                </div>
+              </div>
+            </div>
+            <div class="selection-bar" data-pane-sel="right" hidden>
+              <span class="sel-count" data-pane-sel-count="right"
+                >0 selected</span
+              >
+              <button
+                type="button"
+                class="tool-btn move-btn"
+                data-move-sel="right"
+              >
+                ⇠ Move to Main
+              </button>
+              <button type="button" class="tool-btn" data-del-sel="right">
+                Delete
+              </button>
+              <button type="button" class="tool-btn" data-clear-sel="right">
+                Clear
+              </button>
+            </div>
+          </div>
+          <div class="pane-body" data-pane-body="right">
+            <table class="compact-table">
+              <thead data-pane-thead="right"></thead>
+              <tbody data-pane-tbody="right"></tbody>
+            </table>
+            <div class="pane-drop-hint" data-pane-hint="right" hidden></div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="dupes-drawer" id="dupesDrawer" hidden>
+        <div class="dupes-head">
+          <div>
+            <div class="eyebrow">DUPLICATE GROUPS</div>
+            <h3>Smart duplicates</h3>
+          </div>
+          <button type="button" class="dupes-close" id="dupesClose">×</button>
+        </div>
+        <div class="dupes-filters">
+          <label class="filter-pill"
+            ><input type="checkbox" id="matchPhone" checked /><span
+              >☎ Phone</span
+            ></label
+          >
+          <label class="filter-pill"
+            ><input type="checkbox" id="matchName" checked /><span
+              >A Name</span
+            ></label
+          >
+          <label class="filter-pill"
+            ><input type="checkbox" id="matchEmail" checked /><span
+              >✉ Email</span
+            ></label
+          >
+          <label class="filter-pill"
+            ><input type="checkbox" id="onlyNoNumber" /><span>No #</span></label
+          >
+          <label class="filter-pill"
+            ><input type="checkbox" id="onlySelfDup" /><span
+              >Same # twice</span
+            ></label
+          >
+        </div>
+        <div class="dupes-list" id="dupesList"></div>
+      </aside>
+    </div>
+
+    <div class="drop-overlay" id="dropOverlay">
+      <div>Drop your file to import</div>
+    </div>
+
+    <div class="modal-overlay" id="contactModal" hidden>
+      <div class="modal">
+        <div class="modal-head">
+          <h3 id="modalTitle">Add contact</h3>
+          <button type="button" class="modal-close" id="modalClose">×</button>
+        </div>
+        <form class="modal-form" id="modalForm" novalidate>
+          <div class="modal-body" id="modalBody"></div>
+          <div class="modal-foot">
+            <button type="button" class="btn-ghost" id="modalCancel">
+              Cancel
+            </button>
+            <button type="submit" class="btn-save">Save contact</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="detailsModal" hidden>
+      <div class="modal details-modal">
+        <div class="modal-head">
+          <h3 id="detailsModalTitle">Contact details</h3>
+          <button type="button" class="modal-close" id="detailsModalClose">
+            ×
+          </button>
+        </div>
+        <div class="details-body" id="detailsBody"></div>
+        <div class="modal-foot details-foot">
+          <button
+            type="button"
+            class="btn-ghost details-delete-btn"
+            id="detailsModalDeleteBtn"
+          >
+            Delete
+          </button>
+          <button
+            type="button"
+            class="btn-ghost details-dedupe-btn"
+            id="detailsModalDedupeBtn"
+          >
+            1× Remove repeats
+          </button>
+          <button
+            type="button"
+            class="btn-ghost details-label-btn"
+            id="detailsModalLabelBtn"
+          >
+            Label phones
+          </button>
+          <span class="foot-spacer"></span>
+          <button type="button" class="btn-ghost" id="detailsModalCloseBtn">
+            Close
+          </button>
+          <button type="button" class="btn-save" id="detailsModalEditBtn">
+            Edit
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="Contact_Studio.js"></script>
+  </body>
+</html>

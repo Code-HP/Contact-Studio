@@ -1,0 +1,4890 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contact Duplicate Finder</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+      /* =====================================================================
+     DESIGN TOKENS
+     ===================================================================== */
+      :root {
+        --bg-1: #f5f6fb;
+        --bg-2: #eef1f9;
+        --bg-3: #e8ecf6;
+        --surface: #ffffff;
+        --surface-2: #fafbff;
+        --surface-3: #f3f5fb;
+        --ink-1: #0b1220;
+        --ink-2: #2e3950;
+        --ink-3: #64708b;
+        --ink-4: #9aa4bc;
+        --line-1: #e5e8f2;
+        --line-2: #eef0f7;
+        --line-3: #dfe3ee;
+        --brand-1: #4f46e5;
+        --brand-2: #6366f1;
+        --brand-3: #818cf8;
+        --brand-soft: #eef2ff;
+        --brand-glow: rgba(79, 70, 229, 0.32);
+        --violet-1: #7c3aed;
+        --violet-2: #8b5cf6;
+        --violet-soft: #f3f0ff;
+        --emerald-1: #059669;
+        --emerald-2: #10b981;
+        --emerald-soft: #ecfdf5;
+        --amber-1: #d97706;
+        --amber-2: #f59e0b;
+        --amber-soft: #fffbeb;
+        --rose-1: #e11d48;
+        --rose-2: #f43f5e;
+        --rose-soft: #fff1f2;
+        --sky-1: #0284c7;
+        --sky-soft: #eff6ff;
+        --r-xs: 8px;
+        --r-sm: 10px;
+        --r-md: 14px;
+        --r-lg: 18px;
+        --r-xl: 22px;
+        --r-pill: 999px;
+        --sh-1: 0 1px 2px rgba(15, 23, 42, 0.04);
+        --sh-2:
+          0 2px 6px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04);
+        --sh-3:
+          0 8px 24px -8px rgba(15, 23, 42, 0.1),
+          0 2px 4px rgba(15, 23, 42, 0.04);
+        --sh-4:
+          0 24px 48px -16px rgba(15, 23, 42, 0.2),
+          0 4px 10px -4px rgba(15, 23, 42, 0.08);
+        --sh-brand:
+          0 6px 18px -4px rgba(79, 70, 229, 0.42),
+          0 2px 4px rgba(79, 70, 229, 0.18);
+        --sh-rose:
+          0 6px 18px -4px rgba(225, 29, 72, 0.42),
+          0 2px 4px rgba(225, 29, 72, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family:
+          "Inter",
+          "SF Pro Display",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        color: var(--ink-1);
+        font-size: 13.5px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background:
+          radial-gradient(
+            1200px 600px at 80% -10%,
+            rgba(99, 102, 241, 0.1),
+            transparent 60%
+          ),
+          radial-gradient(
+            900px 500px at -10% 20%,
+            rgba(139, 92, 246, 0.08),
+            transparent 55%
+          ),
+          linear-gradient(
+            180deg,
+            var(--bg-1) 0%,
+            var(--bg-2) 55%,
+            var(--bg-3) 100%
+          );
+        background-attachment: fixed;
+      }
+
+      .app {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+      }
+
+      /* =====================================================================
+     TOPBAR
+     ===================================================================== */
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 14px 22px;
+        flex: 0 0 auto;
+        background:
+          radial-gradient(
+            800px 200px at 100% 0%,
+            rgba(139, 92, 246, 0.32),
+            transparent 60%
+          ),
+          radial-gradient(
+            600px 200px at 0% 100%,
+            rgba(79, 70, 229, 0.28),
+            transparent 60%
+          ),
+          linear-gradient(135deg, #141a2e 0%, #1e1b4b 55%, #111827 100%);
+        color: #fff;
+        box-shadow:
+          0 6px 28px -10px rgba(15, 23, 42, 0.5),
+          inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+        position: relative;
+        z-index: 6;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+      }
+      .logo {
+        width: 42px;
+        height: 42px;
+        border-radius: 13px;
+        flex: 0 0 auto;
+        background: linear-gradient(
+          135deg,
+          #6366f1 0%,
+          #8b5cf6 60%,
+          #a855f7 100%
+        );
+        display: grid;
+        place-items: center;
+        font-size: 20px;
+        color: #fff;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.35),
+          0 8px 20px -6px rgba(99, 102, 241, 0.6),
+          0 0 0 1px rgba(255, 255, 255, 0.08);
+        position: relative;
+        overflow: hidden;
+      }
+      .logo::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.18),
+          transparent 40%
+        );
+        pointer-events: none;
+      }
+      .brand h1 {
+        font-size: 15px;
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        color: #fff;
+      }
+      .brand p {
+        margin: 3px 0 0;
+        font-size: 11.5px;
+        color: #a5a8c4;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .brand p .dot-ok {
+        color: #34d399;
+        font-weight: 700;
+        text-shadow: 0 0 10px rgba(52, 211, 153, 0.55);
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .btn {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.06);
+        color: #e6e8f3;
+        padding: 9px 15px;
+        border-radius: 11px;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          transform 0.12s,
+          background 0.15s,
+          border-color 0.15s,
+          box-shadow 0.15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: inherit;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+      .btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.13);
+        border-color: rgba(255, 255, 255, 0.26);
+        transform: translateY(-1px);
+      }
+      .btn:active:not(:disabled) {
+        transform: translateY(0);
+      }
+      .btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      .btn.primary {
+        background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+        border-color: transparent;
+        color: #fff;
+        box-shadow: var(--sh-brand);
+      }
+      .btn.primary:hover:not(:disabled) {
+        background: linear-gradient(135deg, #7c83ff 0%, #8b5cf6 100%);
+        box-shadow: 0 8px 22px -4px rgba(99, 102, 241, 0.55);
+      }
+      .btn.hist {
+        background: rgba(148, 163, 184, 0.12);
+        border-color: rgba(148, 163, 184, 0.24);
+      }
+      .btn.hist:hover:not(:disabled) {
+        background: rgba(148, 163, 184, 0.22);
+      }
+      .btn .kbd {
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        background: rgba(255, 255, 255, 0.14);
+        border-radius: 5px;
+        padding: 2px 5px;
+        opacity: 0.9;
+        font-family: "SF Mono", ui-monospace, Menlo, monospace;
+      }
+      .btn.cols {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: rgba(139, 92, 246, 0.4);
+        color: #ddd6fe;
+      }
+      .btn.cols:hover:not(:disabled) {
+        background: rgba(139, 92, 246, 0.32);
+        border-color: rgba(139, 92, 246, 0.6);
+      }
+
+      /* =====================================================================
+     LAYOUT
+     ===================================================================== */
+      .layout {
+        flex: 1;
+        display: flex;
+        gap: 16px;
+        padding: 16px;
+        min-height: 0;
+      }
+      .panel {
+        background: var(--surface);
+        border-radius: var(--r-xl);
+        box-shadow: var(--sh-3);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+        border: 1px solid rgba(15, 23, 42, 0.045);
+        position: relative;
+      }
+      .panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      }
+      .left {
+        flex: 1 1 72%;
+        min-width: 0;
+      }
+      .right {
+        flex: 0 0 27%;
+        min-width: 300px;
+        max-width: 460px;
+      }
+
+      /* =====================================================================
+     PANEL HEAD
+     ===================================================================== */
+      .panel-head {
+        flex: 0 0 auto;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--line-2);
+        background: linear-gradient(180deg, #fdfdff 0%, #f8f9fe 100%);
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+        position: relative;
+        z-index: 1;
+      }
+      .ph-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: nowrap; /* Keep tools and name on one line */
+        min-width: 0;
+      }
+      .panel-head h2 {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: var(--r-pill);
+        background: var(--surface-3);
+        color: var(--ink-3);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: none;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        border: 1px solid var(--line-2);
+        flex: 0 1 auto;
+        min-width: 0;
+      }
+      #fileNameText {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      #fileRowsText {
+        flex: 0 0 auto;
+        font-size: 11px;
+        color: var(--ink-3);
+        font-weight: 600;
+      }
+      .pill.blue {
+        background: var(--brand-soft);
+        color: var(--brand-1);
+        border-color: #dfe1ff;
+      }
+      .pill.amber {
+        background: var(--amber-soft);
+        color: var(--amber-1);
+        border-color: #fde68a;
+      }
+      .pill.green {
+        background: var(--emerald-soft);
+        color: var(--emerald-1);
+        border-color: #bbf7d0;
+      }
+
+      .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--brand-soft);
+        color: var(--brand-1);
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 4px 5px 4px 11px;
+        border-radius: var(--r-pill);
+        letter-spacing: 0.02em;
+        max-width: 230px;
+        cursor: pointer;
+        transition: 0.18s;
+        user-select: none;
+        border: 1px solid #dfe1ff;
+        flex: 0 0 auto;
+      }
+      .filter-chip:hover {
+        background: #dfe1ff;
+        transform: translateY(-1px);
+      }
+      .filter-chip .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+      }
+      .filter-chip .lbl {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .filter-chip .x {
+        background: rgba(79, 70, 229, 0.15);
+        border-radius: var(--r-pill);
+        width: 18px;
+        height: 18px;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        line-height: 1;
+        font-weight: 800;
+        flex: 0 0 auto;
+      }
+      .filter-chip:hover .x {
+        background: rgba(79, 70, 229, 0.28);
+      }
+      .filter-chip[hidden] {
+        display: none !important;
+      }
+
+      .ph-tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 0 auto;
+      }
+      #search {
+        font-family: inherit;
+        font-size: 12.5px;
+        padding: 9px 13px;
+        border-radius: var(--r-md);
+        border: 1px solid var(--line-3);
+        background: var(--surface-2);
+        width: 210px;
+        outline: none;
+        transition: 0.18s;
+        color: var(--ink-1);
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
+      }
+      #search::placeholder {
+        color: var(--ink-4);
+      }
+      #search:hover {
+        border-color: #cbd3e6;
+        background: #fff;
+      }
+      #search:focus {
+        border-color: var(--brand-2);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.14);
+      }
+
+      .check {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+        color: var(--ink-2);
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+      }
+      .check input {
+        accent-color: var(--brand-1);
+        width: 15px;
+        height: 15px;
+        cursor: pointer;
+        margin: 0;
+        border-radius: 5px;
+      }
+
+      .check.recent {
+        font-weight: 700;
+        color: var(--emerald-1);
+        background: var(--emerald-soft);
+        padding: 6px 11px;
+        border-radius: var(--r-pill);
+        border: 1px solid #bbf7d0;
+        transition: 0.18s;
+      }
+      .check.recent:hover {
+        background: #d1fae5;
+        transform: translateY(-1px);
+      }
+      .check.recent input {
+        accent-color: var(--emerald-1);
+      }
+      .check.recent .count {
+        background: var(--emerald-1);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: var(--r-pill);
+        margin-left: 2px;
+        letter-spacing: 0.02em;
+        min-width: 22px;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(5, 150, 105, 0.25);
+      }
+      .check.recent .count.zero {
+        background: #d1d5db;
+        color: #6b7280;
+        box-shadow: none;
+      }
+
+      .btn-clear-recent {
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 6px 11px;
+        border-radius: var(--r-md);
+        background: #fff;
+        color: var(--ink-3);
+        border: 1px solid var(--line-3);
+        cursor: pointer;
+        transition: 0.18s;
+        white-space: nowrap;
+      }
+      .btn-clear-recent:hover {
+        background: var(--surface-3);
+        color: var(--ink-1);
+        border-color: #cbd3e6;
+        transform: translateY(-1px);
+      }
+      .btn-clear-recent[hidden] {
+        display: none !important;
+      }
+
+      .btn.hist-sm {
+        padding: 6px 10px;
+        font-size: 14px;
+        border-radius: 8px;
+        background: rgba(148, 163, 184, 0.12);
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        color: var(--ink-2);
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: 700;
+        transition: 0.15s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+      }
+      .btn.hist-sm:hover:not(:disabled) {
+        background: rgba(148, 163, 184, 0.22);
+        border-color: rgba(148, 163, 184, 0.4);
+        transform: translateY(-1px);
+      }
+      .btn.hist-sm:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* Column Dropdown */
+      .col-dropdown {
+        position: relative;
+        display: inline-block;
+      }
+      .btn-dropdown {
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 7px 12px;
+        border-radius: var(--r-md);
+        background: #fff;
+        color: var(--ink-2);
+        border: 1px solid var(--line-3);
+        cursor: pointer;
+        transition: 0.18s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .btn-dropdown:hover {
+        background: var(--surface-3);
+        border-color: #cbd3e6;
+        transform: translateY(-1px);
+      }
+      .btn-dropdown .caret {
+        font-size: 9px;
+        opacity: 0.6;
+      }
+      .col-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        background: #fff;
+        border: 1px solid var(--line-3);
+        border-radius: var(--r-md);
+        box-shadow: var(--sh-3);
+        padding: 6px;
+        z-index: 10;
+        min-width: 200px;
+        max-height: 280px;
+        overflow-y: auto;
+      }
+      .col-dropdown-menu label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        font-size: 12.5px;
+        color: var(--ink-2);
+        cursor: pointer;
+        border-radius: 6px;
+        transition: 0.12s;
+        white-space: nowrap;
+      }
+      .col-dropdown-menu label:hover {
+        background: var(--surface-3);
+        color: var(--ink-1);
+      }
+      .col-dropdown-menu input[type="checkbox"] {
+        accent-color: var(--brand-1);
+        width: 15px;
+        height: 15px;
+        cursor: pointer;
+        margin: 0;
+        border-radius: 4px;
+      }
+
+      .btn-add {
+        font-family: inherit;
+        font-size: 12.5px;
+        font-weight: 700;
+        padding: 8px 14px;
+        border-radius: var(--r-md);
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #fff;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: 0.18s;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 12px -3px rgba(16, 185, 129, 0.45);
+      }
+      .btn-add:hover {
+        background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px -4px rgba(16, 185, 129, 0.55);
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .stat {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 9px 12px;
+        background: var(--surface-2);
+        border: 1px solid var(--line-2);
+        border-radius: var(--r-md);
+        transition: 0.18s;
+      }
+      .stat:hover {
+        background: #fff;
+        border-color: var(--line-3);
+      }
+      .stat b {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--ink-1);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+      }
+      .stat span {
+        font-size: 10px;
+        color: var(--ink-4);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+      }
+      .stat:nth-child(1) b {
+        color: var(--brand-1);
+      }
+      .stat:nth-child(2) b {
+        color: var(--violet-1);
+      }
+      .stat:nth-child(3) b {
+        color: var(--amber-1);
+      }
+      .stat.recent b {
+        color: var(--emerald-1);
+      }
+
+      /* =====================================================================
+     TABLE
+     ===================================================================== */
+      .table-wrap {
+        flex: 1;
+        overflow: auto;
+        position: relative;
+        min-height: 0;
+      }
+      table {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+        font-size: 12.5px;
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: linear-gradient(180deg, #f7f9ff 0%, #f1f4fc 100%);
+        text-align: left;
+        padding: 10px 12px;
+        font-weight: 800;
+        color: var(--ink-3);
+        white-space: nowrap;
+        border-bottom: 1px solid var(--line-3);
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        vertical-align: bottom;
+      }
+      thead th .col-type {
+        display: block;
+        font-size: 8.5px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-top: 4px;
+        color: var(--ink-4);
+      }
+      thead th .col-type.phone {
+        color: var(--emerald-1);
+      }
+      thead th .col-type.email {
+        color: var(--brand-1);
+      }
+      thead th .col-type.name,
+      thead th .col-type.first,
+      thead th .col-type.last {
+        color: var(--amber-1);
+      }
+      thead th .col-type.org,
+      thead th .col-type.title,
+      thead th .col-type.address,
+      thead th .col-type.note {
+        color: var(--violet-1);
+      }
+
+      td.check,
+      th.check {
+        width: 44px;
+        min-width: 44px;
+        max-width: 44px;
+        text-align: center;
+        padding: 8px 4px;
+        vertical-align: middle;
+      }
+
+      th.check {
+        padding: 10px 4px;
+        background: linear-gradient(180deg, #f7f9ff 0%, #f1f4fc 100%);
+      }
+
+      td.check input,
+      th.check input {
+        width: 18px;
+        height: 18px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 6px;
+        background: #fff;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          border-color 0.15s,
+          box-shadow 0.15s;
+        display: inline-block;
+        vertical-align: middle;
+        position: relative;
+        margin: 0;
+        padding: 0;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      }
+
+      /* Select All: keep the header checkbox centered in its own fixed column */
+      th.check #selectAllCheck {
+        position: relative;
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        padding: 0;
+        transform: none;
+      }
+      td.check input:hover,
+      th.check input:hover {
+        border-color: #818cf8;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+      }
+      td.check input:checked,
+      th.check input:checked {
+        background: linear-gradient(135deg, #6366f1, #7c3aed);
+        border-color: #6366f1;
+        box-shadow: 0 3px 8px -2px rgba(99, 102, 241, 0.45);
+      }
+      td.check input:checked::after,
+      th.check input:checked::after {
+        content: "";
+        position: absolute;
+        left: 5px;
+        top: 1.5px;
+        width: 5px;
+        height: 10px;
+        border: solid #fff;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+      th.check input:indeterminate {
+        background: linear-gradient(135deg, #818cf8, #a78bfa);
+        border-color: #818cf8;
+      }
+      th.check input:indeterminate::after {
+        content: "";
+        position: absolute;
+        left: 3px;
+        top: 7px;
+        width: 10px;
+        height: 2px;
+        background: #fff;
+        border-radius: 1px;
+      }
+      th.check input:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+      }
+
+      tbody td {
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--line-2);
+        max-width: 280px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+        color: var(--ink-2);
+      }
+      tbody tr {
+        transition: background 0.1s;
+        position: relative;
+      }
+
+      tbody tr:hover td {
+        background: #f8faff;
+      }
+      tbody tr.row-dup td {
+        background: #fffbeb;
+      }
+      tbody tr.row-dup:hover td {
+        background: #fef3c7;
+      }
+      tbody tr.row-sel td {
+        background: #fffbeb;
+      }
+      tbody tr.row-sel:hover td {
+        background: #fef3c7;
+      }
+      tbody tr.row-sel:not(.row-dup) td {
+        background: #eef2ff;
+      }
+      tbody tr.row-sel:not(.row-dup):hover td {
+        background: #e0e7ff;
+      }
+      tbody tr.row-dim td {
+        background: #fff;
+        opacity: 0.32;
+      }
+      tbody tr.row-dim:hover td {
+        background: var(--surface-2);
+        opacity: 0.5;
+      }
+      tbody tr.row-checked td {
+        background: #f5f7ff;
+      }
+      tbody tr.row-checked:hover td {
+        background: #eef2ff;
+      }
+      tbody tr.row-checked.row-dup td {
+        background: #fef9e7;
+      }
+      tbody tr.row-checked.row-sel td {
+        background: #fef9e7;
+      }
+
+      tbody tr.row-dup::before,
+      tbody tr.row-sel::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--g, #f59e0b);
+        pointer-events: none;
+        z-index: 1;
+      }
+      tbody tr.row-edited.row-dup::before,
+      tbody tr.row-edited.row-sel::before {
+        background: var(--g, #f59e0b);
+      }
+      tbody tr.row-edited:not(.row-dup)::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: #10b981;
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      td.idx,
+      th.idx {
+        width: 60px;
+        color: var(--ink-4);
+        font-variant-numeric: tabular-nums;
+        font-size: 11px;
+        text-align: right;
+        padding-right: 14px;
+        font-weight: 600;
+      }
+      td.idx .edited-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        margin-left: 8px;
+        vertical-align: middle;
+        background: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+      }
+      td.idx .edited-dot.edited {
+        background: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.22);
+      }
+
+      td.grp,
+      th.grp {
+        width: 70px;
+      }
+      .gchip {
+        display: inline-block;
+        padding: 2px 9px;
+        border-radius: var(--r-pill);
+        font-size: 10.5px;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: 0.03em;
+        box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.15);
+      }
+      .gchip.none {
+        background: #e5e8f2;
+        color: var(--ink-4);
+        font-weight: 700;
+        box-shadow: none;
+      }
+
+      th.actions-th {
+        width: 78px;
+        text-align: center;
+      }
+      td.actions-cell {
+        width: 78px;
+        text-align: center;
+        overflow: visible;
+      }
+      .row-actions {
+        display: inline-flex;
+        gap: 5px;
+        opacity: 0.45;
+        transition: opacity 0.18s;
+      }
+      tbody tr:hover .row-actions,
+      tbody tr.row-sel .row-actions,
+      tbody tr.row-dup .row-actions,
+      tbody tr.row-edited .row-actions,
+      tbody tr.row-checked .row-actions {
+        opacity: 1;
+      }
+      .act-btn {
+        border: 1px solid var(--line-3);
+        background: #fff;
+        border-radius: 9px;
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        color: var(--ink-3);
+        transition: 0.14s;
+        font-family: inherit;
+        font-size: 13px;
+        padding: 0;
+        line-height: 1;
+        box-shadow: var(--sh-1);
+      }
+      .act-btn:hover {
+        background: var(--brand-soft);
+        color: var(--brand-1);
+        border-color: #dfe1ff;
+        transform: translateY(-1px);
+        box-shadow: var(--sh-2);
+      }
+      .act-btn.danger:hover {
+        background: var(--rose-soft);
+        color: var(--rose-1);
+        border-color: #fecdd3;
+      }
+
+      /* =====================================================================
+     EMPTY STATE
+     ===================================================================== */
+      .empty-state {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: var(--ink-4);
+        padding: 30px;
+        pointer-events: none;
+      }
+      .empty-state > div {
+        position: relative;
+        max-width: 480px;
+      }
+      .empty-state .big {
+        font-size: 56px;
+        margin-bottom: 14px;
+        opacity: 0.55;
+        display: inline-block;
+        filter: drop-shadow(0 8px 20px rgba(99, 102, 241, 0.25));
+        position: relative;
+      }
+      .empty-state .big::after {
+        content: "";
+        position: absolute;
+        inset: -24px -32px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(99, 102, 241, 0.12),
+          transparent 70%
+        );
+        z-index: -1;
+      }
+      .empty-state h3 {
+        margin: 0 0 8px;
+        font-size: 17px;
+        color: var(--ink-1);
+        font-weight: 750;
+        letter-spacing: -0.01em;
+      }
+      .empty-state p {
+        margin: 0;
+        font-size: 13px;
+        max-width: 460px;
+        line-height: 1.65;
+        color: var(--ink-3);
+      }
+      .empty-state code {
+        background: var(--surface-3);
+        padding: 2px 7px;
+        border-radius: 6px;
+        font-size: 11.5px;
+        color: var(--brand-1);
+        font-weight: 600;
+        border: 1px solid var(--line-2);
+        font-family: "SF Mono", ui-monospace, Menlo, monospace;
+      }
+
+      /* =====================================================================
+     MATCH TOGGLES
+     ===================================================================== */
+      .match-toggles {
+        flex: 0 0 auto;
+        display: flex;
+        gap: 14px;
+        padding: 11px 16px;
+        border-bottom: 1px solid var(--line-2);
+        background: linear-gradient(180deg, #fbfcff 0%, #f5f7fe 100%);
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .match-toggles .label {
+        font-size: 10.5px;
+        font-weight: 800;
+        color: var(--ink-4);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .match-toggles .sep {
+        width: 1px;
+        align-self: stretch;
+        background: var(--line-3);
+        margin: 0 2px;
+      }
+
+      .check.strong {
+        font-weight: 700;
+        color: var(--amber-1);
+        background: var(--amber-soft);
+        padding: 6px 11px;
+        border-radius: var(--r-pill);
+        border: 1px solid #fde68a;
+        transition: 0.18s;
+      }
+      .check.strong:hover {
+        background: #fde68a;
+        transform: translateY(-1px);
+      }
+      .check.strong input {
+        accent-color: var(--amber-1);
+      }
+      .check.strong .count {
+        background: var(--amber-1);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: var(--r-pill);
+        margin-left: 2px;
+        letter-spacing: 0.02em;
+        min-width: 22px;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(217, 119, 6, 0.3);
+      }
+      .check.strong .count.zero {
+        background: #d1d5db;
+        color: #6b7280;
+        box-shadow: none;
+      }
+
+      /* =====================================================================
+     SIDEBAR
+     ===================================================================== */
+      .sidebar {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        min-height: 0;
+      }
+      .sb-empty {
+        padding: 34px 18px;
+        text-align: center;
+        color: var(--ink-4);
+        font-size: 12.5px;
+        line-height: 1.65;
+        flex: 0 0 auto;
+      }
+      .sb-empty .big {
+        font-size: 36px;
+        display: block;
+        margin-bottom: 12px;
+        opacity: 0.75;
+        filter: drop-shadow(0 6px 14px rgba(99, 102, 241, 0.22));
+      }
+      .sb-empty b {
+        color: var(--ink-2);
+      }
+      .sb-empty .hint {
+        display: inline-block;
+        margin-top: 12px;
+        font-size: 11.5px;
+        color: var(--ink-3);
+        background: var(--surface-3);
+        padding: 7px 13px;
+        border-radius: var(--r-md);
+        border: 1px solid var(--line-2);
+      }
+      .sb-empty .hint b {
+        color: var(--amber-1);
+      }
+
+      .group-card {
+        border: 1px solid var(--line-2);
+        border-radius: var(--r-md);
+        overflow: hidden;
+        background: #fff;
+        transition:
+          box-shadow 0.18s,
+          border-color 0.18s,
+          transform 0.18s,
+          background 0.18s;
+        cursor: pointer;
+        flex: 0 0 auto;
+        position: relative;
+      }
+      .group-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--g);
+        opacity: 0.85;
+        transition: opacity 0.18s;
+      }
+      .group-card:hover {
+        border-color: #cbd3e6;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px -6px rgba(15, 23, 42, 0.12);
+      }
+      .group-card:hover::before {
+        opacity: 1;
+      }
+      .group-card.selected {
+        border-color: var(--g);
+        box-shadow:
+          0 0 0 2px var(--g),
+          0 8px 20px -8px rgba(15, 23, 42, 0.2);
+        background: #fafbff;
+      }
+      .gc-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px 4px 16px;
+        flex-wrap: nowrap;
+      }
+      .gc-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--g);
+        flex: 0 0 auto;
+        box-shadow:
+          0 0 0 3px rgba(255, 255, 255, 0.6),
+          0 2px 5px rgba(0, 0, 0, 0.15);
+      }
+      .gc-title {
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--ink-2);
+        letter-spacing: 0.02em;
+        flex: 0 0 auto;
+      }
+      .gc-count {
+        margin-left: auto;
+        font-size: 10.5px;
+        font-weight: 800;
+        color: var(--ink-3);
+        background: var(--surface-3);
+        padding: 3px 9px;
+        border-radius: var(--r-pill);
+        flex: 0 0 auto;
+        border: 1px solid var(--line-2);
+      }
+      .group-card.selected .gc-count {
+        background: var(--brand-soft);
+        color: var(--brand-1);
+        border-color: #dfe1ff;
+      }
+      .gc-body {
+        padding: 4px 12px 11px 16px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        overflow: hidden;
+      }
+      .gc-name {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--ink-1);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+        flex: 0 1 auto;
+      }
+      .gc-more {
+        font-size: 10.5px;
+        font-weight: 800;
+        color: var(--ink-3);
+        background: var(--surface-3);
+        padding: 2px 8px;
+        border-radius: var(--r-pill);
+        flex: 0 0 auto;
+        border: 1px solid var(--line-2);
+      }
+      .badges {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        flex: 0 0 auto;
+        margin-left: auto;
+      }
+      .badge {
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 3px 7px;
+        border-radius: 6px;
+      }
+      .badge.phone {
+        background: var(--emerald-soft);
+        color: var(--emerald-1);
+      }
+      .badge.email {
+        background: var(--brand-soft);
+        color: var(--brand-1);
+      }
+      .badge.name {
+        background: var(--amber-soft);
+        color: var(--amber-1);
+      }
+
+      /* =====================================================================
+     DROP OVERLAY
+     ===================================================================== */
+      .drop-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.82);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        display: none;
+        place-items: center;
+        z-index: 100;
+        color: #fff;
+        font-size: 22px;
+        font-weight: 700;
+        animation: dropFade 0.18s ease-out;
+      }
+      @keyframes dropFade {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .drop-overlay.show {
+        display: grid;
+      }
+      .drop-overlay div {
+        border: 3px dashed rgba(255, 255, 255, 0.5);
+        border-radius: 26px;
+        padding: 70px 90px;
+        text-align: center;
+        background: rgba(99, 102, 241, 0.1);
+        box-shadow: 0 24px 60px -20px rgba(99, 102, 241, 0.5);
+        backdrop-filter: blur(12px);
+      }
+      .drop-overlay div::before {
+        content: "📥";
+        display: block;
+        font-size: 52px;
+        margin-bottom: 14px;
+        filter: drop-shadow(0 8px 20px rgba(139, 92, 246, 0.5));
+      }
+
+      /* =====================================================================
+     BULK BAR
+     ===================================================================== */
+      .bulk-bar {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #1e1b4b 0%, #111827 100%);
+        color: #fff;
+        border-radius: var(--r-lg);
+        padding: 10px 14px 10px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow:
+          0 24px 48px -12px rgba(15, 23, 42, 0.55),
+          0 0 0 1px rgba(255, 255, 255, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        z-index: 60;
+        font-size: 13px;
+        animation: bulkIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        backdrop-filter: blur(10px);
+      }
+      .bulk-bar[hidden] {
+        display: none !important;
+      }
+      @keyframes bulkIn {
+        from {
+          opacity: 0;
+          transform: translate(-50%, 18px);
+        }
+        to {
+          opacity: 1;
+          transform: translate(-50%, 0);
+        }
+      }
+      .bulk-bar .bulk-icon {
+        font-size: 15px;
+        color: #a5b4fc;
+        flex: 0 0 auto;
+        background: rgba(99, 102, 241, 0.28);
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+      .bulk-bar .bulk-count {
+        font-weight: 600;
+        white-space: nowrap;
+        color: #e0e7ff;
+      }
+      .bulk-bar .bulk-count b {
+        font-weight: 800;
+        color: #c7d2fe;
+        font-variant-numeric: tabular-nums;
+        font-size: 14px;
+      }
+      .bulk-bar .bulk-sep {
+        width: 1px;
+        height: 22px;
+        background: rgba(255, 255, 255, 0.14);
+        flex: 0 0 auto;
+      }
+      .bulk-btn {
+        font-family: inherit;
+        font-size: 12.5px;
+        font-weight: 650;
+        padding: 8px 15px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.18s;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.06);
+        color: #e6e8f3;
+        white-space: nowrap;
+      }
+      .bulk-btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.14);
+        border-color: rgba(255, 255, 255, 0.28);
+        transform: translateY(-1px);
+      }
+      .bulk-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .bulk-btn.danger {
+        background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+        border-color: transparent;
+        color: #fff;
+        box-shadow: var(--sh-rose);
+      }
+      .bulk-btn.danger:hover:not(:disabled) {
+        background: linear-gradient(135deg, #fb7185 0%, #f43f5e 100%);
+        box-shadow: 0 8px 22px -4px rgba(225, 29, 72, 0.55);
+      }
+
+      .bulk-btn.vcf {
+        background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+        border-color: transparent;
+        color: #fff;
+        box-shadow: var(--sh-brand);
+      }
+      .bulk-btn.vcf:hover:not(:disabled) {
+        background: linear-gradient(135deg, #7c83ff 0%, #8b5cf6 100%);
+        box-shadow: 0 8px 22px -4px rgba(99, 102, 241, 0.55);
+      }
+
+      /* =====================================================================
+     MODALS
+     ===================================================================== */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.58);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        display: grid;
+        place-items: center;
+        z-index: 200;
+        padding: 20px;
+        animation: modalFade 0.18s ease-out;
+      }
+      @keyframes modalFade {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .modal-overlay[hidden] {
+        display: none;
+      }
+      .modal {
+        background: #fff;
+        border-radius: var(--r-xl);
+        width: 100%;
+        max-width: 540px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: var(--sh-4);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        animation: modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @keyframes modalIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      .modal.wide {
+        max-width: 660px;
+      }
+      .modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--line-2);
+        background: linear-gradient(180deg, #fdfdff 0%, #f7f9fe 100%);
+      }
+      .modal-head h3 {
+        margin: 0;
+        font-size: 14.5px;
+        font-weight: 750;
+        color: var(--ink-1);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        letter-spacing: -0.01em;
+      }
+      .modal-close {
+        background: transparent;
+        border: none;
+        font-size: 16px;
+        color: var(--ink-3);
+        cursor: pointer;
+        padding: 6px 10px;
+        border-radius: 9px;
+        font-family: inherit;
+        line-height: 1;
+        transition: 0.15s;
+      }
+      .modal-close:hover {
+        background: var(--surface-3);
+        color: var(--ink-1);
+      }
+      .modal-form {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        flex: 1;
+      }
+      .modal-body {
+        padding: 18px 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+      }
+      .form-row {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .form-row label {
+        font-size: 10.5px;
+        font-weight: 800;
+        color: var(--ink-3);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .form-row label .field-type {
+        font-size: 9.5px;
+        font-weight: 800;
+        color: var(--ink-3);
+        background: var(--surface-3);
+        padding: 2px 8px;
+        border-radius: var(--r-pill);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border: 1px solid var(--line-2);
+      }
+      .form-row label .field-type.name,
+      .form-row label .field-type.first,
+      .form-row label .field-type.last {
+        background: var(--amber-soft);
+        color: var(--amber-1);
+        border-color: #fde68a;
+      }
+      .form-row label .field-type.phone {
+        background: var(--emerald-soft);
+        color: var(--emerald-1);
+        border-color: #bbf7d0;
+      }
+      .form-row label .field-type.email {
+        background: var(--brand-soft);
+        color: var(--brand-1);
+        border-color: #dfe1ff;
+      }
+      .form-row input {
+        font-family: inherit;
+        font-size: 13.5px;
+        padding: 11px 13px;
+        border: 1px solid var(--line-3);
+        border-radius: var(--r-md);
+        background: var(--surface-2);
+        color: var(--ink-1);
+        outline: none;
+        transition: 0.18s;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
+      }
+      .form-row input:hover {
+        border-color: #cbd3e6;
+        background: #fff;
+      }
+      .form-row input:focus {
+        border-color: var(--brand-2);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.14);
+      }
+
+      .col-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        font-size: 10.5px;
+        color: var(--ink-3);
+      }
+      .col-legend span {
+        background: var(--surface-3);
+        border-radius: var(--r-pill);
+        padding: 4px 11px;
+        font-weight: 600;
+        border: 1px solid var(--line-2);
+      }
+      .col-legend span b {
+        color: var(--ink-2);
+        font-weight: 800;
+      }
+      .col-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .col-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 13px;
+        border: 1px solid var(--line-2);
+        border-radius: var(--r-md);
+        background: #fff;
+        transition: 0.18s;
+      }
+      .col-row:hover {
+        border-color: #cbd3e6;
+        background: var(--surface-2);
+        transform: translateY(-1px);
+        box-shadow: var(--sh-2);
+      }
+      .col-row .col-name {
+        font-weight: 700;
+        font-size: 13px;
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--ink-1);
+      }
+      .col-row select {
+        font-family: inherit;
+        font-size: 12.5px;
+        padding: 8px 11px;
+        border-radius: var(--r-sm);
+        border: 1px solid var(--line-3);
+        background: var(--surface-2);
+        color: var(--ink-1);
+        cursor: pointer;
+        flex: 0 0 auto;
+        min-width: 170px;
+        outline: none;
+        transition: 0.18s;
+      }
+      .col-row select:hover {
+        background: #fff;
+        border-color: #cbd3e6;
+      }
+      .col-row select:focus {
+        border-color: var(--brand-2);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.14);
+      }
+      .col-row .auto-flag {
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 3px 9px;
+        border-radius: var(--r-pill);
+        background: var(--surface-3);
+        color: var(--ink-3);
+        flex: 0 0 auto;
+        white-space: nowrap;
+        border: 1px solid var(--line-2);
+      }
+      .col-row .auto-flag.diff {
+        background: var(--amber-soft);
+        color: var(--amber-1);
+        border-color: #fde68a;
+      }
+
+      .modal-foot {
+        display: flex;
+        gap: 9px;
+        justify-content: flex-end;
+        align-items: center;
+        padding: 14px 20px;
+        border-top: 1px solid var(--line-2);
+        background: linear-gradient(0deg, #fbfcff 0%, #f7f9fe 100%);
+      }
+      .btn-ghost,
+      .btn-save {
+        font-family: inherit;
+        font-size: 12.5px;
+        font-weight: 700;
+        padding: 9px 18px;
+        border-radius: var(--r-md);
+        cursor: pointer;
+        transition: 0.18s;
+        border: 1px solid transparent;
+      }
+      .btn-ghost {
+        background: var(--surface-3);
+        color: var(--ink-2);
+        border-color: var(--line-3);
+      }
+      .btn-ghost:hover {
+        background: #e5e8f2;
+        color: var(--ink-1);
+        transform: translateY(-1px);
+      }
+      .btn-save {
+        background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+        color: #fff;
+        box-shadow: var(--sh-brand);
+      }
+      .btn-save:hover {
+        background: linear-gradient(135deg, #7c83ff 0%, #8b5cf6 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 22px -4px rgba(99, 102, 241, 0.55);
+      }
+      .foot-spacer {
+        flex: 1 1 auto;
+      }
+
+      /* =====================================================================
+     SCROLLBARS
+     ===================================================================== */
+      .table-wrap::-webkit-scrollbar,
+      .sidebar::-webkit-scrollbar,
+      .modal-body::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+      }
+      .table-wrap::-webkit-scrollbar-thumb,
+      .sidebar::-webkit-scrollbar-thumb,
+      .modal-body::-webkit-scrollbar-thumb {
+        background: #c7cfe2;
+        border-radius: var(--r-pill);
+        border: 3px solid transparent;
+        background-clip: content-box;
+      }
+      .table-wrap::-webkit-scrollbar-thumb:hover,
+      .sidebar::-webkit-scrollbar-thumb:hover,
+      .modal-body::-webkit-scrollbar-thumb:hover {
+        background: #a8b2c9;
+        background-clip: content-box;
+      }
+      .table-wrap::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+
+      /* =====================================================================
+     SWEETALERT OVERRIDES
+     ===================================================================== */
+      .swal2-popup {
+        font-family: inherit !important;
+        border-radius: var(--r-xl) !important;
+        padding: 24px 24px 20px !important;
+        box-shadow: var(--sh-4) !important;
+      }
+      .swal2-title {
+        font-size: 18px !important;
+        font-weight: 800 !important;
+        color: var(--ink-1) !important;
+        letter-spacing: -0.01em !important;
+        padding: 0 !important;
+        margin-bottom: 12px !important;
+      }
+      .swal2-html-container {
+        font-size: 13.5px !important;
+        color: var(--ink-2) !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .swal2-actions {
+        gap: 10px !important;
+        margin-top: 20px !important;
+      }
+      .swal2-confirm,
+      .swal2-cancel {
+        font-family: inherit !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        border-radius: var(--r-md) !important;
+        padding: 11px 22px !important;
+        transition: 0.18s !important;
+      }
+      .swal2-confirm {
+        background: linear-gradient(
+          135deg,
+          #f43f5e 0%,
+          #e11d48 100%
+        ) !important;
+        box-shadow: var(--sh-rose) !important;
+      }
+      .swal2-confirm:hover {
+        background: linear-gradient(
+          135deg,
+          #fb7185 0%,
+          #f43f5e 100%
+        ) !important;
+        transform: translateY(-1px) !important;
+      }
+      .swal2-cancel {
+        background: var(--surface-3) !important;
+        color: var(--ink-2) !important;
+        border: 1px solid var(--line-3) !important;
+      }
+      .swal2-cancel:hover {
+        background: #e5e8f2 !important;
+        color: var(--ink-1) !important;
+        transform: translateY(-1px) !important;
+      }
+      .swal2-icon {
+        margin: 0 auto 16px !important;
+      }
+
+      /* =====================================================================
+     RESPONSIVE
+     ===================================================================== */
+      @media (max-width: 1100px) {
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 1024px) {
+        .ph-row {
+          flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        }
+        .panel-head h2 {
+          width: 100%;
+          max-width: 100%;
+        }
+      }
+      @media (max-width: 900px) {
+        .layout {
+          flex-direction: column;
+          overflow: auto;
+          gap: 12px;
+          padding: 12px;
+        }
+        .left {
+          flex: 1 1 auto;
+          min-height: 440px;
+        }
+        .right {
+          flex: 0 0 auto;
+          max-width: none;
+          min-width: 0;
+          max-height: 560px;
+        }
+        .brand p {
+          display: none;
+        }
+        #search {
+          width: 100%;
+        }
+        .ph-tools {
+          width: 100%;
+        }
+        .ph-tools #search {
+          flex: 1 1 auto;
+        }
+        .btn .kbd {
+          display: none;
+        }
+        .col-row {
+          flex-wrap: wrap;
+        }
+        .col-row select {
+          min-width: 0;
+          width: 100%;
+        }
+        .bulk-bar {
+          left: 12px;
+          right: 12px;
+          transform: none;
+          justify-content: center;
+          flex-wrap: wrap;
+          animation: none;
+        }
+        .stats {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+        }
+        .stat {
+          padding: 8px 10px;
+        }
+        .stat b {
+          font-size: 16px;
+        }
+      }
+      @media (max-width: 520px) {
+        .stats {
+          grid-template-columns: 1fr 1fr;
+        }
+        .topbar {
+          padding: 12px 14px;
+          gap: 12px;
+        }
+        .brand h1 {
+          font-size: 13.5px;
+        }
+        .actions {
+          gap: 6px;
+        }
+        .btn {
+          padding: 8px 12px;
+          font-size: 12px;
+        }
+        .btn-add {
+          padding: 7px 11px;
+        }
+        .modal-body {
+          padding: 14px 16px;
+        }
+        .modal-head {
+          padding: 14px 16px;
+        }
+        .modal-foot {
+          padding: 12px 16px;
+        }
+      }
+
+      /* =====================================================================
+     TABLE ALIGNMENT OVERRIDES
+     ===================================================================== */
+
+      #table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: auto;
+      }
+
+      #table thead th {
+        padding: 10px 12px;
+        vertical-align: middle;
+        min-height: 54px;
+      }
+
+      #table tbody td {
+        padding: 10px 12px;
+        vertical-align: middle;
+        height: 54px;
+      }
+
+      #table th.check,
+      #table td.check {
+        width: 56px;
+        min-width: 56px;
+        max-width: 56px;
+        padding: 0;
+        text-align: center;
+        vertical-align: middle;
+      }
+
+      /* Keep the entire header row fixed during vertical scrolling.
+         The Select All checkbox follows the fixed header instead of scrolling. */
+      #table thead {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+      }
+
+      #table thead th.check {
+        position: sticky;
+        top: 0;
+        left: 0;
+        z-index: 21;
+        padding: 0;
+        text-align: center;
+        vertical-align: middle;
+        background: linear-gradient(180deg, #f7f9ff 0%, #f1f4fc 100%);
+        border-bottom: 1px solid var(--line-3);
+      }
+
+      #table tbody td.check {
+        padding: 0;
+      }
+
+      #table th.check input,
+      #table td.check input {
+        display: block;
+        width: 18px;
+        height: 18px;
+        margin: 0 auto;
+        padding: 0;
+        position: relative;
+        vertical-align: middle;
+      }
+
+      /* Select All belongs to the fixed header, never the scrolling body. */
+      #table thead th.check #selectAllCheck {
+        position: relative;
+        display: block;
+        margin: 0 auto;
+        top: auto;
+      }
+
+      #table th.idx,
+      #table td.idx {
+        width: 52px;
+        min-width: 52px;
+        text-align: center;
+        padding-left: 8px;
+        padding-right: 8px;
+        vertical-align: middle;
+      }
+
+      #table th.grp,
+      #table td.grp {
+        width: 72px;
+        min-width: 72px;
+        text-align: center;
+        padding-left: 8px;
+        padding-right: 8px;
+        vertical-align: middle;
+      }
+
+      #table th.actions-th,
+      #table td.actions-cell {
+        width: 78px;
+        min-width: 78px;
+        text-align: center;
+        vertical-align: middle;
+      }
+
+      #table tbody tr.row-dup,
+      #table tbody tr.row-sel,
+      #table tbody tr.row-edited {
+        position: relative;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">⧉</div>
+          <div>
+            <h1>Contact Duplicate Finder</h1>
+            <p>
+              100% local ·
+              <span class="dot-ok">autosaved in this browser</span> · CSV · TSV
+              · VCF · JSON
+            </p>
+          </div>
+        </div>
+        <div class="actions">
+          <label class="btn primary">
+            <input
+              type="file"
+              id="fileInput"
+              accept=".csv,.tsv,.txt,.vcf,.vcard,.json,text/csv,text/vcard,application/json"
+              hidden
+            />
+            <span>📁 Choose file</span>
+          </label>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel left">
+          <div class="panel-head">
+            <div class="ph-row">
+              <h2>
+                <!-- Removed the "All contacts" label -->
+                <span class="pill" id="fileNamePill" title="no file loaded">
+                  <span id="fileNameText">no file loaded</span>
+                  <span id="fileRowsText" style="display: none"></span>
+                </span>
+                <span
+                  class="filter-chip"
+                  id="filterChip"
+                  hidden
+                  title="Click to clear the group filter"
+                >
+                  <span class="dot" id="filterChipDot"></span>
+                  <span class="lbl" id="filterChipLabel">Group</span>
+                  <span class="x">✕</span>
+                </span>
+              </h2>
+              <div class="ph-tools">
+                <input
+                  id="search"
+                  type="search"
+                  placeholder="🔍 Search contacts…"
+                  autocomplete="off"
+                />
+                <label
+                  class="check recent"
+                  id="recentLabel"
+                  title="Show only contacts you added or edited in this session"
+                >
+                  <input type="checkbox" id="showRecent" />
+                  ✎ Recently edited
+                  <span class="count zero" id="recentCount">0</span>
+                </label>
+                <button class="btn hist-sm" id="undoBtn" disabled title="Undo">
+                  ↶
+                </button>
+                <button class="btn hist-sm" id="redoBtn" disabled title="Redo">
+                  ↷
+                </button>
+                <button
+                  type="button"
+                  class="btn-clear-recent"
+                  id="clearRecentBtn"
+                  hidden
+                  title="Clear all recent-edit markers"
+                >
+                  Clear markers
+                </button>
+
+                <div class="col-dropdown">
+                  <button
+                    type="button"
+                    class="btn-dropdown"
+                    id="colDropdownBtn"
+                  >
+                    📋 Columns <span class="caret">▼</span>
+                  </button>
+                  <div class="col-dropdown-menu" id="colDropdownMenu" hidden>
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+
+                <button
+                  class="btn-add"
+                  id="addBtn"
+                  type="button"
+                  title="Add a new contact"
+                >
+                  ＋ Add contact
+                </button>
+              </div>
+            </div>
+            <div class="stats">
+              <div class="stat">
+                <b id="statContacts">0</b><span>Contacts</span>
+              </div>
+              <div class="stat">
+                <b id="statGroups">0</b><span>Groups</span>
+              </div>
+              <div class="stat">
+                <b id="statDupes">0</b><span>In duplicates</span>
+              </div>
+              <div class="stat recent">
+                <b id="statRecent">0</b><span>Recent</span>
+              </div>
+            </div>
+          </div>
+          <div class="table-wrap" id="tableWrap">
+            <table id="table" hidden>
+              <thead id="thead"></thead>
+              <tbody id="tbody"></tbody>
+            </table>
+            <div class="empty-state" id="emptyState">
+              <div>
+                <div class="big">📇</div>
+                <h3>Drop a contact file here</h3>
+                <p>
+                  Supports <code>.csv</code> <code>.tsv</code> <code>.txt</code>
+                  <code>.vcf</code> <code>.vcard</code> <code>.json</code>.
+                  Column names are auto-detected. You can also click
+                  <b>＋ Add contact</b> to create contacts manually, then edit
+                  or delete rows as needed.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel right">
+          <div class="panel-head">
+            <div class="ph-row">
+              <h2>
+                Duplicates
+                <span class="pill amber" id="groupCount">0 groups</span>
+              </h2>
+            </div>
+          </div>
+          <div class="match-toggles">
+            <span class="label">Match on</span>
+            <label class="check"
+              ><input type="checkbox" id="matchPhone" checked /> Phone</label
+            >
+            <label class="check"
+              ><input type="checkbox" id="matchEmail" checked /> Email</label
+            >
+            <label class="check"
+              ><input type="checkbox" id="matchName" checked /> Name</label
+            >
+            <span class="sep"></span>
+            <label
+              class="check strong"
+              id="noNameLabel"
+              title="Show only duplicate groups that were found WITHOUT relying on names — i.e. matched by phone or email."
+            >
+              <input type="checkbox" id="onlyNoName" />
+              No Name match
+              <span class="count zero" id="noNameCount">0</span>
+            </label>
+          </div>
+          <div class="sidebar" id="sidebar">
+            <div class="sb-empty">
+              <span class="big">🔍</span>Load a file to scan for duplicates.
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <div class="drop-overlay" id="dropOverlay">
+      <div>Drop your file to scan</div>
+    </div>
+
+    <div
+      class="bulk-bar"
+      id="bulkBar"
+      hidden
+      role="toolbar"
+      aria-label="Bulk actions"
+    >
+      <span class="bulk-icon">✓</span>
+      <span class="bulk-count"><b id="bulkCount">0</b> selected</span>
+      <span class="bulk-sep"></span>
+      <button
+        type="button"
+        class="bulk-btn vcf"
+        id="bulkExportVcfBtn"
+        title="Export selected contacts as a VCF file"
+      >
+        📇 Export VCF
+      </button>
+      <button
+        type="button"
+        class="bulk-btn"
+        id="bulkClearBtn"
+        title="Clear selection"
+      >
+        Clear
+      </button>
+      <button
+        type="button"
+        class="bulk-btn danger"
+        id="bulkDeleteBtn"
+        title="Delete all selected contacts"
+      >
+        🗑 Delete selected
+      </button>
+    </div>
+
+    <div class="modal-overlay" id="contactModal" hidden>
+      <div class="modal">
+        <div class="modal-head">
+          <h3 id="modalTitle">Add contact</h3>
+          <button
+            type="button"
+            class="modal-close"
+            id="modalClose"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+        <form class="modal-form" id="modalForm" novalidate>
+          <div class="modal-body" id="modalBody"></div>
+          <div class="modal-foot">
+            <button type="button" class="btn-ghost" id="modalCancel">
+              Cancel
+            </button>
+            <button type="submit" class="btn-save" id="modalSave">
+              💾 Save contact
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="colModal" hidden>
+      <div class="modal wide">
+        <div class="modal-head">
+          <h3>🧩 Column mapping</h3>
+          <button
+            type="button"
+            class="modal-close"
+            id="colModalClose"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="modal-form">
+          <div class="modal-body" id="colModalBody"></div>
+          <div class="modal-foot">
+            <button type="button" class="btn-ghost" id="colModalAuto">
+              ✨ Auto-detect all
+            </button>
+            <span class="foot-spacer"></span>
+            <button type="button" class="btn-ghost" id="colModalCancel">
+              Cancel
+            </button>
+            <button type="button" class="btn-save" id="colModalSave">
+              Apply mapping
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        const SESSION_PREFIX =
+          "s" +
+          Date.now().toString(36) +
+          Math.random().toString(36).slice(2, 6);
+        let sidCounter = 0;
+        function makeSid() {
+          return SESSION_PREFIX + "_" + ++sidCounter;
+        }
+
+        const els = {
+          fileInput: document.getElementById("fileInput"),
+          dropOverlay: document.getElementById("dropOverlay"),
+          table: document.getElementById("table"),
+          thead: document.getElementById("thead"),
+          tbody: document.getElementById("tbody"),
+          tableWrap: document.getElementById("tableWrap"),
+          emptyState: document.getElementById("emptyState"),
+          sidebar: document.getElementById("sidebar"),
+          search: document.getElementById("search"),
+          showRecent: document.getElementById("showRecent"),
+          recentLabel: document.getElementById("recentLabel"),
+          recentCount: document.getElementById("recentCount"),
+          clearRecentBtn: document.getElementById("clearRecentBtn"),
+          statRecent: document.getElementById("statRecent"),
+          statContacts: document.getElementById("statContacts"),
+          statGroups: document.getElementById("statGroups"),
+          statDupes: document.getElementById("statDupes"),
+          groupCount: document.getElementById("groupCount"),
+          undoBtn: document.getElementById("undoBtn"),
+          redoBtn: document.getElementById("redoBtn"),
+          fileNameText: document.getElementById("fileNameText"),
+          fileRowsText: document.getElementById("fileRowsText"),
+          fileNamePill: document.getElementById("fileNamePill"),
+          filterChip: document.getElementById("filterChip"),
+          filterChipDot: document.getElementById("filterChipDot"),
+          filterChipLabel: document.getElementById("filterChipLabel"),
+          matchPhone: document.getElementById("matchPhone"),
+          matchEmail: document.getElementById("matchEmail"),
+          matchName: document.getElementById("matchName"),
+          onlyNoName: document.getElementById("onlyNoName"),
+          noNameCount: document.getElementById("noNameCount"),
+          noNameLabel: document.getElementById("noNameLabel"),
+          addBtn: document.getElementById("addBtn"),
+          colDropdownBtn: document.getElementById("colDropdownBtn"),
+          colDropdownMenu: document.getElementById("colDropdownMenu"),
+          bulkBar: document.getElementById("bulkBar"),
+          bulkCount: document.getElementById("bulkCount"),
+          bulkClearBtn: document.getElementById("bulkClearBtn"),
+          bulkDeleteBtn: document.getElementById("bulkDeleteBtn"),
+          bulkExportVcfBtn: document.getElementById("bulkExportVcfBtn"),
+          contactModal: document.getElementById("contactModal"),
+          modalTitle: document.getElementById("modalTitle"),
+          modalBody: document.getElementById("modalBody"),
+          modalForm: document.getElementById("modalForm"),
+          modalClose: document.getElementById("modalClose"),
+          modalCancel: document.getElementById("modalCancel"),
+          modalSave: document.getElementById("modalSave"),
+          colModal: document.getElementById("colModal"),
+          colModalBody: document.getElementById("colModalBody"),
+          colModalClose: document.getElementById("colModalClose"),
+          colModalCancel: document.getElementById("colModalCancel"),
+          colModalSave: document.getElementById("colModalSave"),
+          colModalAuto: document.getElementById("colModalAuto"),
+        };
+
+        const state = {
+          contacts: [],
+          columns: [],
+          colMap: {},
+          visibleColumns: {},
+          groups: [],
+          groupColors: new Map(),
+          selectedGroup: null,
+          selectedSids: new Set(),
+          search: "",
+          onlyNoName: false,
+          showRecentOnly: false,
+          match: { phone: true, email: true, name: true },
+          loadedName: "",
+          editingId: null,
+        };
+
+        const STORAGE_KEY = "cdf.state.v1";
+        const STORAGE_VERSION = 1;
+        let storageWarned = false;
+        let saveTimer = null;
+
+        function isStorageAvailable() {
+          try {
+            const t = "__cdf_test__";
+            localStorage.setItem(t, t);
+            localStorage.removeItem(t);
+            return true;
+          } catch (e) {
+            return false;
+          }
+        }
+        const storageOk = isStorageAvailable();
+
+        function buildPayload() {
+          let selMembers = null;
+          if (state.selectedGroup) {
+            const g = state.groups.find((x) => x.id === state.selectedGroup);
+            if (g) selMembers = g.contacts.slice();
+          }
+          return {
+            v: STORAGE_VERSION,
+            columns: state.columns,
+            colMap: state.colMap,
+            visibleColumns: state.visibleColumns,
+            contacts: state.contacts.map((c) => ({
+              _sid: c._sid,
+              values: c.values,
+              editedAt: c.editedAt || null,
+              editKind: c.editKind || null,
+            })),
+            loadedName: state.loadedName,
+            match: state.match,
+            onlyNoName: state.onlyNoName,
+            showRecentOnly: state.showRecentOnly,
+            search: state.search,
+            selectedGroupMembers: selMembers,
+          };
+        }
+
+        function saveStateNow() {
+          if (!storageOk) {
+            if (!storageWarned) {
+              storageWarned = true;
+              console.warn(
+                "Contact Duplicate Finder: localStorage is unavailable.",
+              );
+            }
+            return;
+          }
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(buildPayload()));
+          } catch (e) {
+            if (!storageWarned) {
+              storageWarned = true;
+              console.warn("Could not save state.", e);
+            }
+          }
+        }
+        function scheduleSave() {
+          if (saveTimer) clearTimeout(saveTimer);
+          saveTimer = setTimeout(function () {
+            saveTimer = null;
+            saveStateNow();
+          }, 250);
+        }
+        function flushPendingSave() {
+          if (saveTimer) {
+            clearTimeout(saveTimer);
+            saveTimer = null;
+            saveStateNow();
+          }
+        }
+        function clearStoredState() {
+          if (!storageOk) return;
+          try {
+            localStorage.removeItem(STORAGE_KEY);
+          } catch (e) {}
+        }
+
+        function loadStoredState() {
+          if (!storageOk) return false;
+          let raw;
+          try {
+            raw = localStorage.getItem(STORAGE_KEY);
+          } catch (e) {
+            return false;
+          }
+          if (!raw) return false;
+          let data;
+          try {
+            data = JSON.parse(raw);
+          } catch (e) {
+            return false;
+          }
+          if (!data || data.v !== STORAGE_VERSION) return false;
+          if (!Array.isArray(data.columns) || !Array.isArray(data.contacts))
+            return false;
+
+          state.columns = data.columns.slice();
+          state.colMap = Object.assign({}, data.colMap || {});
+          state.visibleColumns = data.visibleColumns || {};
+          state.loadedName = data.loadedName || "";
+          state.match = Object.assign(
+            { phone: true, email: true, name: true },
+            data.match || {},
+          );
+          state.onlyNoName = !!data.onlyNoName;
+          state.showRecentOnly = !!data.showRecentOnly;
+          state.search = data.search || "";
+
+          state.columns.forEach((col) => {
+            if (state.visibleColumns[col] === undefined)
+              state.visibleColumns[col] = true;
+          });
+
+          state.contacts = data.contacts.map((entry, i) => {
+            const values = entry && entry.values ? entry.values : {};
+            const c = {
+              id: i,
+              _sid: (entry && entry._sid) || makeSid(),
+              values: Object.assign({}, values),
+              name: "",
+              phones: [],
+              emails: [],
+              keys: { phone: [], email: [], name: [] },
+              groupId: null,
+              searchText: "",
+              editedAt: (entry && entry.editedAt) || null,
+              editKind: (entry && entry.editKind) || null,
+            };
+            rebuildContactDerived(c, state.columns, state.colMap);
+            return c;
+          });
+
+          els.search.value = state.search;
+          els.onlyNoName.checked = state.onlyNoName;
+          els.showRecent.checked = state.showRecentOnly;
+          els.matchPhone.checked = state.match.phone;
+          els.matchEmail.checked = state.match.email;
+          els.matchName.checked = state.match.name;
+
+          computeDuplicates();
+
+          if (
+            Array.isArray(data.selectedGroupMembers) &&
+            data.selectedGroupMembers.length
+          ) {
+            selectGroupByMemberIndexes(data.selectedGroupMembers);
+            if (state.onlyNoName && state.selectedGroup) {
+              const g = state.groups.find((x) => x.id === state.selectedGroup);
+              if (!g || !isNoNameGroup(g)) state.selectedGroup = null;
+            }
+          }
+          return state.contacts.length > 0 || state.columns.length > 0;
+        }
+
+        const DEFAULT_COLUMNS = ["Name", "Phone", "Email", "Company", "Notes"];
+        const FIELD_OPTIONS = [
+          { value: "name", label: "Name (full)" },
+          { value: "first", label: "First name" },
+          { value: "last", label: "Last name" },
+          { value: "phone", label: "Phone" },
+          { value: "email", label: "Email" },
+          { value: "org", label: "Organization" },
+          { value: "title", label: "Job title" },
+          { value: "address", label: "Address" },
+          { value: "note", label: "Note" },
+          { value: "other", label: "Not used for matching" },
+        ];
+
+        function defaultColMap() {
+          const m = {};
+          DEFAULT_COLUMNS.forEach((c) => {
+            m[c] = detectField(c);
+          });
+          return m;
+        }
+
+        function stripBOM(t) {
+          return t && t.charCodeAt(0) === 0xfeff ? t.slice(1) : t;
+        }
+
+        function parseDelimited(text, delimiter) {
+          const rows = [];
+          let row = [];
+          let field = "";
+          let inQuotes = false;
+          const len = text.length;
+          for (let i = 0; i < len; i++) {
+            const ch = text[i];
+            if (inQuotes) {
+              if (ch === '"') {
+                if (text[i + 1] === '"') {
+                  field += '"';
+                  i++;
+                } else {
+                  inQuotes = false;
+                }
+              } else {
+                field += ch;
+              }
+            } else {
+              if (ch === '"') {
+                inQuotes = true;
+              } else if (ch === delimiter) {
+                row.push(field);
+                field = "";
+              } else if (ch === "\n") {
+                row.push(field);
+                rows.push(row);
+                row = [];
+                field = "";
+              } else if (ch === "\r") {
+              } else {
+                field += ch;
+              }
+            }
+          }
+          row.push(field);
+          rows.push(row);
+          return rows;
+        }
+
+        function detectDelimiter(text) {
+          const lines = text
+            .split(/\r?\n/)
+            .filter((l) => l.trim())
+            .slice(0, 12);
+          if (!lines.length) return ",";
+          const sample = lines.join("\n");
+          const candidates = [",", ";", "\t", "|"];
+          let best = ",",
+            bestScore = -1;
+          for (const d of candidates) {
+            const rows = parseDelimited(sample, d);
+            if (!rows.length) continue;
+            const counts = rows.map((r) => r.length);
+            const max = Math.max.apply(null, counts);
+            if (max < 2) continue;
+            const consistent =
+              counts.filter((c) => c === max).length / counts.length;
+            const score = max * consistent;
+            if (score > bestScore) {
+              bestScore = score;
+              best = d;
+            }
+          }
+          return best;
+        }
+
+        function normalizeHeader(s) {
+          return String(s || "")
+            .trim()
+            .toLowerCase()
+            .replace(/[_\-\.]+/g, " ")
+            .replace(/\s+/g, " ");
+        }
+
+        function detectField(colName) {
+          const n = normalizeHeader(colName);
+          if (!n) return "other";
+          if (/e ?mail/.test(n) || n === "mail" || /mail address/.test(n))
+            return "email";
+          if (
+            /phone|mobile|cell|telephone|\btel\b|whatsapp|fax|contact number|number/.test(
+              n,
+            )
+          )
+            return "phone";
+          if (
+            /^(full ?name|name|display ?name|contact ?name|fullname|formatted ?name|complete ?name|person)$/.test(
+              n,
+            )
+          )
+            return "name";
+          if (/first ?name|given ?name|firstname|givenname|forename/.test(n))
+            return "first";
+          if (/last ?name|family ?name|surname|lastname|familyname/.test(n))
+            return "last";
+          if (
+            /company|organi[sz]ation|employer|business|\borg\b|account name/.test(
+              n,
+            )
+          )
+            return "org";
+          if (/job ?title|title|position|designation|role|department/.test(n))
+            return "title";
+          if (
+            /address|street|city|state|province|country|zip|postal|location|region/.test(
+              n,
+            )
+          )
+            return "address";
+          if (/note|comment|remark|description|memo/.test(n)) return "note";
+          return "other";
+        }
+
+        const HEADER_HINTS =
+          /^(id|name|full ?name|first ?name|last ?name|e-?mail|email address|phone|phone number|mobile|cell|tel|telephone|company|organi[sz]ation|title|job title|address|city|state|zip|postal code|country|notes?|contact|website|url|birthday|department|position|group|tags?|categories|given name|family name|surname)$/i;
+
+        function detectHeader(rows) {
+          if (!rows.length) return false;
+          const first = rows[0].map((c) => String(c).trim());
+          const nonEmpty = first.filter(Boolean);
+          if (!nonEmpty.length) return false;
+          let hits = 0;
+          for (const cell of nonEmpty) {
+            if (HEADER_HINTS.test(cell) || detectField(cell) !== "other")
+              hits++;
+          }
+          return hits >= 1;
+        }
+
+        function dedupeHeaders(arr) {
+          const seen = new Map();
+          return arr.map((h, i) => {
+            let name = String(h || "").trim() || "Column " + (i + 1);
+            const key = name.toLowerCase();
+            if (seen.has(key)) {
+              const n = seen.get(key) + 1;
+              seen.set(key, n);
+              name = name + " (" + n + ")";
+            } else {
+              seen.set(key, 1);
+            }
+            return name;
+          });
+        }
+
+        function unescapeVCard(v) {
+          return String(v || "")
+            .replace(/\\n/gi, "\n")
+            .replace(/\\,/g, ",")
+            .replace(/\\;/g, ";")
+            .replace(/\\\\/g, "\\")
+            .trim();
+        }
+
+        function parseVCard(text) {
+          const rawLines = text.split(/\r\n|\r|\n/);
+          const lines = [];
+          for (const line of rawLines) {
+            if (/^[ \t]/.test(line) && lines.length)
+              lines[lines.length - 1] += line.slice(1);
+            else lines.push(line);
+          }
+          const cards = [];
+          let cur = null;
+          for (const line of lines) {
+            const upper = line.toUpperCase();
+            if (upper.startsWith("BEGIN:VCARD")) {
+              cur = [];
+              continue;
+            }
+            if (upper.startsWith("END:VCARD")) {
+              if (cur) cards.push(cur);
+              cur = null;
+              continue;
+            }
+            if (cur) cur.push(line);
+          }
+          const objects = cards
+            .map((cardLines) => {
+              const rec = {
+                fn: "",
+                first: "",
+                last: "",
+                phones: [],
+                emails: [],
+                org: "",
+                title: "",
+                note: "",
+                adr: "",
+              };
+              for (const line of cardLines) {
+                const idx = line.indexOf(":");
+                if (idx === -1) continue;
+                const left = line.slice(0, idx);
+                const value = line.slice(idx + 1);
+                const prop = left.split(";")[0].trim().toUpperCase();
+                switch (prop) {
+                  case "FN":
+                    if (!rec.fn) rec.fn = unescapeVCard(value);
+                    break;
+                  case "N": {
+                    const parts = value.split(";");
+                    if (!rec.last) rec.last = unescapeVCard(parts[0] || "");
+                    if (!rec.first) rec.first = unescapeVCard(parts[1] || "");
+                    break;
+                  }
+                  case "TEL": {
+                    const v = unescapeVCard(value);
+                    if (v) rec.phones.push(v);
+                    break;
+                  }
+                  case "EMAIL": {
+                    const v = unescapeVCard(value);
+                    if (v) rec.emails.push(v);
+                    break;
+                  }
+                  case "ORG":
+                    if (!rec.org) rec.org = unescapeVCard(value.split(";")[0]);
+                    break;
+                  case "TITLE":
+                    if (!rec.title) rec.title = unescapeVCard(value);
+                    break;
+                  case "NOTE":
+                    if (!rec.note) rec.note = unescapeVCard(value);
+                    break;
+                  case "ADR":
+                    if (!rec.adr)
+                      rec.adr = unescapeVCard(
+                        value.split(";").filter(Boolean).join(", "),
+                      );
+                    break;
+                }
+              }
+              const name =
+                rec.fn || [rec.first, rec.last].filter(Boolean).join(" ");
+              return {
+                Name: name,
+                Phone: rec.phones.join(" / "),
+                Email: rec.emails.join(" / "),
+                Organization: rec.org,
+                Title: rec.title,
+                Address: rec.adr,
+                Notes: rec.note,
+              };
+            })
+            .filter((o) => o.Name || o.Phone || o.Email);
+          const columns = [
+            "Name",
+            "Phone",
+            "Email",
+            "Organization",
+            "Title",
+            "Address",
+            "Notes",
+          ];
+          const colMap = {
+            Name: "name",
+            Phone: "phone",
+            Email: "email",
+            Organization: "org",
+            Title: "title",
+            Address: "address",
+            Notes: "note",
+          };
+          return { objects, columns, colMap };
+        }
+
+        function splitList(v) {
+          return String(v || "")
+            .split(/[;|\n]+|\s{3,}/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+        function normPhone(v) {
+          const d = String(v || "").replace(/\D+/g, "");
+          if (d.length < 7) return "";
+          return d.length > 10 ? d.slice(-10) : d;
+        }
+        function normEmail(v) {
+          return String(v || "")
+            .trim()
+            .toLowerCase()
+            .replace(/^mailto:/, "");
+        }
+        function normName(v) {
+          return String(v || "")
+            .toLowerCase()
+            .normalize("NFKD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, " ")
+            .trim()
+            .replace(/\s+/g, " ");
+        }
+
+        function rebuildContactDerived(c, columns, colMap) {
+          c.phones = [];
+          c.emails = [];
+          c.keys = { phone: [], email: [], name: [] };
+          let full = "",
+            first = "",
+            last = "";
+          let hasNameField = false;
+
+          for (const col of columns) {
+            const field = colMap[col];
+            const val = c.values[col];
+            if (!val) continue;
+            if (field === "phone") {
+              splitList(val).forEach((p) => {
+                if (p) c.phones.push(p);
+              });
+            } else if (field === "email") {
+              splitList(val).forEach((e) => {
+                if (e) c.emails.push(e);
+              });
+            } else if (field === "name") {
+              if (!full) full = val;
+              hasNameField = true;
+            } else if (field === "first") {
+              if (!first) first = val;
+              hasNameField = true;
+            } else if (field === "last") {
+              if (!last) last = val;
+              hasNameField = true;
+            }
+          }
+          c.name = (
+            full ||
+            [first, last].filter(Boolean).join(" ") ||
+            c.emails[0] ||
+            c.phones[0] ||
+            "(no name)"
+          ).trim();
+
+          const pKeys = [],
+            eKeys = [];
+          c.phones.forEach((p) => {
+            const k = normPhone(p);
+            if (k && pKeys.indexOf(k) === -1) pKeys.push(k);
+          });
+          c.emails.forEach((e) => {
+            const k = normEmail(e);
+            if (k && eKeys.indexOf(k) === -1) eKeys.push(k);
+          });
+          c.keys.phone = pKeys;
+          c.keys.email = eKeys;
+
+          if (hasNameField) {
+            const nn = normName(c.name);
+            if (nn.length >= 3) {
+              c.keys.name.push(nn);
+              const tokens = nn.split(" ").filter(Boolean).sort().join(" ");
+              if (tokens && tokens !== nn) c.keys.name.push(tokens);
+            }
+          }
+          c.searchText = (
+            c.name +
+            " " +
+            c.phones.join(" ") +
+            " " +
+            c.emails.join(" ") +
+            " " +
+            Object.keys(c.values)
+              .map((k) => c.values[k])
+              .join(" ")
+          ).toLowerCase();
+        }
+
+        function buildContacts(objects, columns, colMap) {
+          return objects.map((values, i) => {
+            const c = {
+              id: i,
+              _sid: makeSid(),
+              values: Object.assign({}, values || {}),
+              name: "",
+              phones: [],
+              emails: [],
+              keys: { phone: [], email: [], name: [] },
+              groupId: null,
+              searchText: "",
+              editedAt: null,
+              editKind: null,
+            };
+            rebuildContactDerived(c, columns, colMap);
+            return c;
+          });
+        }
+
+        function rebuildIds() {
+          state.contacts.forEach((c, i) => {
+            c.id = i;
+          });
+        }
+        function countRecentlyEdited() {
+          let n = 0;
+          for (const c of state.contacts) if (c.editedAt) n++;
+          return n;
+        }
+
+        function computeDuplicates() {
+          const contacts = state.contacts;
+          const n = contacts.length;
+          const parent = new Array(n);
+          for (let i = 0; i < n; i++) parent[i] = i;
+          function find(x) {
+            while (parent[x] !== x) {
+              parent[x] = parent[parent[x]];
+              x = parent[x];
+            }
+            return x;
+          }
+          function union(a, b) {
+            a = find(a);
+            b = find(b);
+            if (a !== b) parent[b] = a;
+          }
+          const types = ["phone", "email", "name"];
+          const maps = { phone: new Map(), email: new Map(), name: new Map() };
+          for (let i = 0; i < n; i++) {
+            const c = contacts[i];
+            for (const t of types) {
+              if (!state.match[t]) continue;
+              const keys = c.keys[t];
+              if (!keys || !keys.length) continue;
+              const m = maps[t];
+              for (const k of keys) {
+                let arr = m.get(k);
+                if (!arr) {
+                  arr = [];
+                  m.set(k, arr);
+                }
+                arr.push(i);
+              }
+            }
+          }
+          for (const t of types) {
+            if (!state.match[t]) continue;
+            for (const arr of maps[t].values()) {
+              for (let i = 1; i < arr.length; i++) union(arr[0], arr[i]);
+            }
+          }
+          const byRoot = new Map();
+          for (let i = 0; i < n; i++) {
+            const r = find(i);
+            let arr = byRoot.get(r);
+            if (!arr) {
+              arr = [];
+              byRoot.set(r, arr);
+            }
+            arr.push(i);
+          }
+          const groups = [];
+          for (const idxs of byRoot.values()) {
+            if (idxs.length < 2) continue;
+            const reasons = [];
+            for (const t of types) {
+              if (!state.match[t]) continue;
+              const seen = new Set();
+              let hit = false;
+              for (const i of idxs) {
+                for (const k of contacts[i].keys[t]) {
+                  if (seen.has(k)) hit = true;
+                  seen.add(k);
+                }
+              }
+              if (hit) reasons.push(t);
+            }
+            groups.push({
+              id: "g" + groups.length,
+              contacts: idxs,
+              reasons: reasons.length ? reasons : ["name"],
+              color: "",
+            });
+          }
+          groups.sort((a, b) => b.contacts.length - a.contacts.length);
+          state.groupColors = new Map();
+          groups.forEach((g, i) => {
+            g.color = "hsl(" + ((i * 67) % 360) + " 72% 46%)";
+            state.groupColors.set(g.id, g.color);
+          });
+          contacts.forEach((c) => {
+            c.groupId = null;
+          });
+          groups.forEach((g) =>
+            g.contacts.forEach((i) => {
+              contacts[i].groupId = g.id;
+            }),
+          );
+          state.groups = groups;
+        }
+
+        function captureSelectedGroupMembers(excludeContact) {
+          if (!state.selectedGroup) return null;
+          const g = state.groups.find((x) => x.id === state.selectedGroup);
+          if (!g) return null;
+          const members = [];
+          for (const ci of g.contacts) {
+            const c = state.contacts[ci];
+            if (c && c !== excludeContact) members.push(c);
+          }
+          return members.length ? members : null;
+        }
+
+        function restoreGroupSelection(previousMembers) {
+          if (!previousMembers || !previousMembers.length) {
+            state.selectedGroup = null;
+            return;
+          }
+          const memberSet = new Set(previousMembers);
+          let bestId = null,
+            bestCount = 0;
+          for (const g of state.groups) {
+            let count = 0;
+            for (const ci of g.contacts)
+              if (memberSet.has(state.contacts[ci])) count++;
+            if (count > bestCount) {
+              bestCount = count;
+              bestId = g.id;
+            }
+          }
+          state.selectedGroup = bestId;
+          if (state.onlyNoName && state.selectedGroup) {
+            const g = state.groups.find((x) => x.id === state.selectedGroup);
+            if (!g || !isNoNameGroup(g)) state.selectedGroup = null;
+          }
+        }
+
+        function selectGroupByMemberIndexes(idxList) {
+          state.selectedGroup = null;
+          if (!idxList || !idxList.length) return;
+          const memberSet = new Set(idxList);
+          let bestId = null,
+            bestCount = 0;
+          for (const g of state.groups) {
+            let count = 0;
+            for (const ci of g.contacts) if (memberSet.has(ci)) count++;
+            if (count > bestCount) {
+              bestCount = count;
+              bestId = g.id;
+            }
+          }
+          state.selectedGroup = bestId;
+        }
+
+        const HISTORY_LIMIT = 60;
+        const history = { undo: [], redo: [] };
+
+        function snapshot() {
+          let selMembers = null;
+          if (state.selectedGroup) {
+            const g = state.groups.find((x) => x.id === state.selectedGroup);
+            if (g) selMembers = g.contacts.slice();
+          }
+          return {
+            columns: state.columns.slice(),
+            colMap: Object.assign({}, state.colMap),
+            visibleColumns: Object.assign({}, state.visibleColumns),
+            contacts: state.contacts.map((c) => ({
+              _sid: c._sid,
+              values: Object.assign({}, c.values),
+              editedAt: c.editedAt || null,
+              editKind: c.editKind || null,
+            })),
+            loadedName: state.loadedName,
+            selMembers: selMembers,
+          };
+        }
+
+        function pushHistory() {
+          history.undo.push(snapshot());
+          if (history.undo.length > HISTORY_LIMIT) history.undo.shift();
+          history.redo.length = 0;
+          updateHistoryButtons();
+        }
+
+        function applySnapshot(snap) {
+          state.columns = snap.columns.slice();
+          state.colMap = Object.assign({}, snap.colMap);
+          state.visibleColumns = Object.assign({}, snap.visibleColumns || {});
+          state.contacts = snap.contacts.map((entry, i) => {
+            const values = entry && entry.values ? entry.values : entry;
+            const c = {
+              id: i,
+              _sid: (entry && entry._sid) || makeSid(),
+              values: Object.assign({}, values),
+              name: "",
+              phones: [],
+              emails: [],
+              keys: { phone: [], email: [], name: [] },
+              groupId: null,
+              searchText: "",
+              editedAt: (entry && entry.editedAt) || null,
+              editKind: (entry && entry.editKind) || null,
+            };
+            rebuildContactDerived(c, state.columns, state.colMap);
+            return c;
+          });
+          state.loadedName = snap.loadedName || "";
+          computeDuplicates();
+          selectGroupByMemberIndexes(snap.selMembers);
+          if (state.onlyNoName && state.selectedGroup) {
+            const g = state.groups.find((x) => x.id === state.selectedGroup);
+            if (!g || !isNoNameGroup(g)) state.selectedGroup = null;
+          }
+          renderAll();
+          saveStateNow();
+        }
+
+        function undo() {
+          if (!history.undo.length) return;
+          history.redo.push(snapshot());
+          applySnapshot(history.undo.pop());
+          updateHistoryButtons();
+        }
+        function redo() {
+          if (!history.redo.length) return;
+          history.undo.push(snapshot());
+          applySnapshot(history.redo.pop());
+          updateHistoryButtons();
+        }
+        function updateHistoryButtons() {
+          const u = history.undo.length,
+            r = history.redo.length;
+          els.undoBtn.disabled = u === 0;
+          els.redoBtn.disabled = r === 0;
+          els.undoBtn.title = u
+            ? "Undo (Ctrl+Z) · " + u + " available"
+            : "Nothing to undo";
+          els.redoBtn.title = r
+            ? "Redo (Ctrl+Shift+Z) · " + r + " available"
+            : "Nothing to redo";
+        }
+
+        function isNoNameGroup(g) {
+          return (
+            g.reasons.indexOf("phone") !== -1 ||
+            g.reasons.indexOf("email") !== -1
+          );
+        }
+        function visibleGroups() {
+          let list = state.groups;
+          if (state.onlyNoName) list = list.filter(isNoNameGroup);
+          return list;
+        }
+        function visibleContactIds() {
+          const s = new Set();
+          visibleGroups().forEach((g) => g.contacts.forEach((i) => s.add(i)));
+          return s;
+        }
+        function countNoNameGroups() {
+          let n = 0;
+          for (const g of state.groups) if (isNoNameGroup(g)) n++;
+          return n;
+        }
+        function selectedGroupContactIds() {
+          if (!state.selectedGroup) return null;
+          const g = state.groups.find((x) => x.id === state.selectedGroup);
+          if (!g) return null;
+          return new Set(g.contacts);
+        }
+        function isColumnVisible(col) {
+          return state.visibleColumns[col] !== false;
+        }
+
+        function getVisibleContacts() {
+          const q = state.search.trim().toLowerCase();
+          const visIds = state.onlyNoName ? visibleContactIds() : null;
+          const selIds = selectedGroupContactIds();
+          const out = [];
+          for (const c of state.contacts) {
+            if (selIds && !selIds.has(c.id)) continue;
+            const inVisibleGroup = !visIds || (c.groupId && visIds.has(c.id));
+            if (visIds && !inVisibleGroup) continue;
+            if (state.showRecentOnly && !c.editedAt) continue;
+            if (q && c.searchText.indexOf(q) === -1) continue;
+            out.push(c);
+          }
+          return out;
+        }
+
+        function pruneSelection() {
+          if (state.selectedSids.size === 0) return;
+          const alive = new Set();
+          state.contacts.forEach((c) => {
+            if (c._sid) alive.add(c._sid);
+          });
+          const toRemove = [];
+          state.selectedSids.forEach((sid) => {
+            if (!alive.has(sid)) toRemove.push(sid);
+          });
+          toRemove.forEach((sid) => state.selectedSids.delete(sid));
+        }
+
+        function updateBulkBar() {
+          const n = state.selectedSids.size;
+          els.bulkBar.hidden = n === 0;
+          if (n > 0) els.bulkCount.textContent = n.toLocaleString();
+          els.bulkDeleteBtn.disabled = n === 0;
+          if (els.bulkExportVcfBtn) els.bulkExportVcfBtn.disabled = n === 0;
+        }
+
+        function updateSelectAllState() {
+          const headerCb = els.thead.querySelector("#selectAllCheck");
+          if (!headerCb) return;
+          const visible = getVisibleContacts();
+          let selectedCount = 0;
+          visible.forEach((c) => {
+            if (c._sid && state.selectedSids.has(c._sid)) selectedCount++;
+          });
+          headerCb.checked =
+            visible.length > 0 && selectedCount === visible.length;
+          headerCb.indeterminate =
+            selectedCount > 0 && selectedCount < visible.length;
+          headerCb.disabled = visible.length === 0;
+        }
+
+        function renderColDropdown() {
+          const menu = els.colDropdownMenu;
+          if (!menu) return;
+          menu.innerHTML = "";
+          if (!state.columns.length) return;
+
+          state.columns.forEach((col) => {
+            const label = document.createElement("label");
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.checked = state.visibleColumns[col] !== false;
+            cb.addEventListener("change", (e) => {
+              state.visibleColumns[col] = e.target.checked;
+              renderHead();
+              renderTable();
+              scheduleSave();
+            });
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(col));
+            menu.appendChild(label);
+          });
+        }
+
+        function renderHead() {
+          const tr = document.createElement("tr");
+
+          const thCheck = document.createElement("th");
+          thCheck.className = "check";
+          const headerCb = document.createElement("input");
+          headerCb.type = "checkbox";
+          headerCb.id = "selectAllCheck";
+          headerCb.title = "Select all visible contacts";
+          headerCb.setAttribute("aria-label", "Select all visible contacts");
+          thCheck.appendChild(headerCb);
+          tr.appendChild(thCheck);
+
+          const thIdx = document.createElement("th");
+          thIdx.className = "idx";
+          thIdx.textContent = "#";
+          tr.appendChild(thIdx);
+
+          const thGrp = document.createElement("th");
+          thGrp.className = "grp";
+          thGrp.textContent = "Grp";
+          tr.appendChild(thGrp);
+
+          state.columns.forEach((col) => {
+            if (!isColumnVisible(col)) return;
+            const th = document.createElement("th");
+            th.appendChild(document.createTextNode(col));
+            const field = state.colMap[col];
+            if (field && field !== "other") {
+              const ft = document.createElement("span");
+              ft.className = "col-type " + field;
+              ft.textContent = field;
+              th.appendChild(ft);
+            }
+            th.title =
+              col +
+              (field && field !== "other" ? "  ·  detected as: " + field : "");
+            tr.appendChild(th);
+          });
+
+          const thAct = document.createElement("th");
+          thAct.className = "actions-th";
+          thAct.textContent = "···";
+          tr.appendChild(thAct);
+
+          els.thead.innerHTML = "";
+          els.thead.appendChild(tr);
+        }
+
+        function groupNumber(groupId) {
+          const idx = state.groups.findIndex((g) => g.id === groupId);
+          return idx === -1 ? null : idx + 1;
+        }
+
+        function renderTable() {
+          const frag = document.createDocumentFragment();
+          const cols = state.columns;
+          const visIds = state.onlyNoName ? visibleContactIds() : null;
+          const selIds = selectedGroupContactIds();
+          const q = state.search.trim().toLowerCase();
+
+          for (const c of state.contacts) {
+            if (selIds && !selIds.has(c.id)) continue;
+            const inVisibleGroup = !visIds || (c.groupId && visIds.has(c.id));
+            if (visIds && !inVisibleGroup) continue;
+            if (state.showRecentOnly && !c.editedAt) continue;
+            if (q && c.searchText.indexOf(q) === -1) continue;
+
+            const tr = document.createElement("tr");
+            tr.dataset.id = String(c.id);
+            tr.dataset.sid = c._sid || "";
+
+            if (c.groupId && inVisibleGroup) {
+              tr.classList.add("row-dup");
+              tr.style.setProperty(
+                "--g",
+                state.groupColors.get(c.groupId) || "#f59e0b",
+              );
+              if (c.groupId === state.selectedGroup)
+                tr.classList.add("row-sel");
+            } else if (c.groupId && !inVisibleGroup) {
+              tr.classList.add("row-dim");
+            }
+            if (c.editedAt) tr.classList.add("row-edited");
+
+            const isChecked = !!(c._sid && state.selectedSids.has(c._sid));
+            if (isChecked) tr.classList.add("row-checked");
+
+            const tdCheck = document.createElement("td");
+            tdCheck.className = "check";
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.dataset.sid = c._sid || "";
+            cb.checked = isChecked;
+            cb.setAttribute("aria-label", "Select contact");
+            tdCheck.appendChild(cb);
+            tr.appendChild(tdCheck);
+
+            const tdIdx = document.createElement("td");
+            tdIdx.className = "idx";
+            tdIdx.textContent = String(c.id + 1);
+            if (c.editedAt) {
+              const dot = document.createElement("span");
+              dot.className =
+                "edited-dot" + (c.editKind === "edited" ? " edited" : "");
+              dot.title =
+                c.editKind === "added"
+                  ? "Added in this session"
+                  : "Edited in this session";
+              tdIdx.appendChild(dot);
+            }
+            tr.appendChild(tdIdx);
+
+            const tdGrp = document.createElement("td");
+            tdGrp.className = "grp";
+            if (c.groupId && inVisibleGroup) {
+              const chip = document.createElement("span");
+              chip.className = "gchip";
+              chip.textContent = "G" + groupNumber(c.groupId);
+              chip.style.background =
+                state.groupColors.get(c.groupId) || "#f59e0b";
+              tdGrp.appendChild(chip);
+            } else if (c.groupId) {
+              const chip = document.createElement("span");
+              chip.className = "gchip none";
+              chip.textContent = "G" + groupNumber(c.groupId);
+              chip.title = 'Hidden by the "No Name match" filter';
+              tdGrp.appendChild(chip);
+            } else {
+              const chip = document.createElement("span");
+              chip.className = "gchip none";
+              chip.textContent = "—";
+              tdGrp.appendChild(chip);
+            }
+            tr.appendChild(tdGrp);
+
+            for (const col of cols) {
+              if (!isColumnVisible(col)) continue;
+              const td = document.createElement("td");
+              const v = c.values[col];
+              td.textContent = v == null ? "" : v;
+              if (v && String(v).length > 30) td.title = String(v);
+              tr.appendChild(td);
+            }
+
+            const tdAct = document.createElement("td");
+            tdAct.className = "actions-cell";
+            const wrap = document.createElement("div");
+            wrap.className = "row-actions";
+
+            const editBtn = document.createElement("button");
+            editBtn.type = "button";
+            editBtn.className = "act-btn";
+            editBtn.dataset.act = "edit";
+            editBtn.dataset.id = c._sid || String(c.id);
+            editBtn.title = "Edit contact";
+            editBtn.setAttribute("aria-label", "Edit contact");
+            editBtn.textContent = "✎";
+
+            const delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.className = "act-btn danger";
+            delBtn.dataset.act = "delete";
+            delBtn.dataset.id = c._sid || String(c.id);
+            delBtn.title = "Delete contact";
+            delBtn.setAttribute("aria-label", "Delete contact");
+            delBtn.textContent = "✕";
+
+            wrap.appendChild(editBtn);
+            wrap.appendChild(delBtn);
+            tdAct.appendChild(wrap);
+            tr.appendChild(tdAct);
+
+            frag.appendChild(tr);
+          }
+
+          els.tbody.innerHTML = "";
+          els.tbody.appendChild(frag);
+          updateSelectAllState();
+        }
+
+        const REASON_LABEL = { phone: "Phone", email: "Email", name: "Name" };
+
+        function renderSidebar() {
+          const sb = els.sidebar;
+          sb.innerHTML = "";
+
+          if (!state.contacts.length) {
+            sb.innerHTML =
+              '<div class="sb-empty"><span class="big">🔍</span>Load a file or add contacts to scan for duplicates.</div>';
+            return;
+          }
+          const list = visibleGroups();
+
+          if (!list.length) {
+            if (state.onlyNoName) {
+              const total = state.groups.length;
+              const noNameTotal = countNoNameGroups();
+              if (noNameTotal === 0 && total > 0) {
+                sb.innerHTML =
+                  '<div class="sb-empty"><span class="big">🙈</span>No duplicate groups were found by <b>phone or email</b> alone.<br>All ' +
+                  total +
+                  ' group(s) here are matched only by name.<br><span class="hint">Uncheck <b>No Name match</b> to see all groups.</span></div>';
+              } else {
+                sb.innerHTML =
+                  '<div class="sb-empty"><span class="big">🎉</span>No duplicates found with the current match rules.</div>';
+              }
+            } else {
+              sb.innerHTML =
+                '<div class="sb-empty"><span class="big">🎉</span>No duplicates found with the current match rules.<br><span class="hint">Try turning on more match fields above.</span></div>';
+            }
+            return;
+          }
+
+          const frag = document.createDocumentFragment();
+          list.forEach((g) => {
+            const gi = state.groups.indexOf(g);
+            const first = state.contacts[g.contacts[0]];
+            const extra = g.contacts.length - 1;
+
+            const card = document.createElement("div");
+            card.className = "group-card";
+            card.dataset.group = g.id;
+            card.style.setProperty("--g", g.color);
+            card.title = "Click to show only this group on the left panel";
+            if (state.selectedGroup === g.id) card.classList.add("selected");
+
+            const head = document.createElement("div");
+            head.className = "gc-head";
+
+            const dot = document.createElement("span");
+            dot.className = "gc-dot";
+            head.appendChild(dot);
+
+            const title = document.createElement("span");
+            title.className = "gc-title";
+            title.textContent = "Group " + (gi + 1);
+            head.appendChild(title);
+
+            const count = document.createElement("span");
+            count.className = "gc-count";
+            count.textContent = g.contacts.length;
+            head.appendChild(count);
+            card.appendChild(head);
+
+            const body = document.createElement("div");
+            body.className = "gc-body";
+
+            const nm = document.createElement("span");
+            nm.className = "gc-name";
+            nm.textContent = first && first.name ? first.name : "(no name)";
+            nm.title = nm.textContent;
+            body.appendChild(nm);
+
+            if (extra > 0) {
+              const more = document.createElement("span");
+              more.className = "gc-more";
+              more.textContent = "+" + extra + " more";
+              body.appendChild(more);
+            }
+
+            if (g.reasons.length) {
+              const badges = document.createElement("span");
+              badges.className = "badges";
+              g.reasons.forEach((r) => {
+                const b = document.createElement("span");
+                b.className = "badge " + r;
+                b.textContent = REASON_LABEL[r] || r;
+                badges.appendChild(b);
+              });
+              body.appendChild(badges);
+            }
+            card.appendChild(body);
+            frag.appendChild(card);
+          });
+          sb.appendChild(frag);
+        }
+
+        function renderFilterChip() {
+          if (!state.selectedGroup) {
+            els.filterChip.hidden = true;
+            return;
+          }
+          const g = state.groups.find((x) => x.id === state.selectedGroup);
+          if (!g) {
+            els.filterChip.hidden = true;
+            return;
+          }
+          const gi = state.groups.indexOf(g) + 1;
+          els.filterChip.hidden = false;
+          els.filterChipDot.style.background = g.color;
+          els.filterChipLabel.textContent =
+            "Group " + gi + " · " + g.contacts.length + " contacts";
+        }
+
+        function renderFileLabel() {
+          if (state.loadedName) {
+            els.fileNameText.textContent = state.loadedName;
+            els.fileRowsText.textContent =
+              " · " + state.contacts.length.toLocaleString() + " rows";
+            els.fileRowsText.style.display = "inline";
+            els.fileNamePill.title =
+              state.loadedName + els.fileRowsText.textContent;
+          } else if (state.contacts.length) {
+            els.fileNameText.textContent = "manual entry";
+            els.fileRowsText.textContent =
+              " · " + state.contacts.length.toLocaleString() + " rows";
+            els.fileRowsText.style.display = "inline";
+            els.fileNamePill.title =
+              els.fileNameText.textContent + els.fileRowsText.textContent;
+          } else {
+            els.fileNameText.textContent = "no file loaded";
+            els.fileRowsText.style.display = "none";
+            els.fileNamePill.title = "no file loaded";
+          }
+        }
+
+        function renderStats() {
+          const total = state.contacts.length;
+          const list = visibleGroups();
+          const noNameTotal = countNoNameGroups();
+          const selIds = selectedGroupContactIds();
+          const recentTotal = countRecentlyEdited();
+
+          let inGroups = 0;
+          list.forEach((g) => {
+            inGroups += g.contacts.length;
+          });
+
+          els.statContacts.textContent = selIds
+            ? selIds.size.toLocaleString()
+            : total.toLocaleString();
+          els.statGroups.textContent = list.length.toLocaleString();
+          els.statDupes.textContent = inGroups.toLocaleString();
+          els.statRecent.textContent = recentTotal.toLocaleString();
+
+          if (state.selectedGroup) {
+            const g = state.groups.find((x) => x.id === state.selectedGroup);
+            const gi = state.groups.indexOf(g) + 1;
+            els.groupCount.textContent = "Viewing Group " + gi;
+            els.groupCount.title = "Showing only this group in the left panel";
+          } else if (state.onlyNoName) {
+            els.groupCount.textContent =
+              list.length + " of " + state.groups.length + " groups";
+            els.groupCount.title =
+              "Filtered: duplicates found by phone / email";
+          } else {
+            els.groupCount.textContent =
+              state.groups.length +
+              (state.groups.length === 1 ? " group" : " groups");
+            els.groupCount.title = "";
+          }
+
+          els.noNameCount.textContent = String(noNameTotal);
+          if (noNameTotal === 0) els.noNameCount.classList.add("zero");
+          else els.noNameCount.classList.remove("zero");
+          els.noNameLabel.title =
+            noNameTotal === 0
+              ? "No duplicate groups found by phone or email alone."
+              : "Show only duplicate groups found by phone or email (" +
+                noNameTotal +
+                " available).";
+
+          els.recentCount.textContent = String(recentTotal);
+          if (recentTotal === 0) els.recentCount.classList.add("zero");
+          else els.recentCount.classList.remove("zero");
+          els.recentLabel.title =
+            recentTotal === 0
+              ? "No contacts added or edited in this session yet."
+              : "Show only the " +
+                recentTotal +
+                " contact" +
+                (recentTotal === 1 ? "" : "s") +
+                " you added or edited in this session.";
+
+          els.clearRecentBtn.hidden = !(recentTotal > 0);
+        }
+
+        function renderAll() {
+          pruneSelection();
+          const hasData = state.contacts.length > 0 || state.columns.length > 0;
+          els.table.hidden = !hasData;
+          els.emptyState.style.display = hasData ? "none" : "grid";
+
+          if (hasData) {
+            renderHead();
+            renderTable();
+            renderColDropdown();
+          } else {
+            els.tbody.innerHTML = "";
+            els.thead.innerHTML = "";
+            els.colDropdownMenu.innerHTML = "";
+          }
+
+          renderSidebar();
+          renderFilterChip();
+          renderFileLabel();
+          renderStats();
+          updateHistoryButtons();
+          updateBulkBar();
+        }
+
+        function recomputeAndRender() {
+          computeDuplicates();
+          if (
+            state.selectedGroup &&
+            !state.groups.some((g) => g.id === state.selectedGroup)
+          )
+            state.selectedGroup = null;
+          if (
+            state.onlyNoName &&
+            state.selectedGroup &&
+            !state.groups.some(
+              (g) => g.id === state.selectedGroup && isNoNameGroup(g),
+            )
+          )
+            state.selectedGroup = null;
+          renderAll();
+          scheduleSave();
+        }
+
+        function openContactModal(contactId) {
+          const isEdit = contactId != null && contactId !== "";
+          let columns = state.columns.slice();
+          let colMap = state.colMap;
+          if (!columns.length) {
+            columns = DEFAULT_COLUMNS.slice();
+            colMap = defaultColMap();
+          }
+
+          const editing = isEdit
+            ? state.contacts.find((c) =>
+                c._sid ? c._sid === contactId : c.id === Number(contactId),
+              )
+            : null;
+
+          state.editingId = editing ? editing._sid || editing.id : null;
+          els.modalTitle.textContent = isEdit
+            ? "✎ Edit contact"
+            : "＋ Add new contact";
+
+          const body = els.modalBody;
+          body.innerHTML = "";
+
+          const help = document.createElement("div");
+          help.style.cssText =
+            "font-size:11.5px;color:#64708b;padding:0 0 6px;line-height:1.55";
+          help.textContent = isEdit
+            ? "Update any field. Only this row will be changed. Duplicate detection re-runs automatically on save."
+            : 'Fill in the contact details. Duplicate detection re-runs automatically after saving. The new row will be flagged as "recently added".';
+          body.appendChild(help);
+
+          const seed = editing ? Object.assign({}, editing.values) : {};
+          const frag = document.createDocumentFragment();
+          columns.forEach((col) => {
+            const field = colMap[col] || "other";
+            const row = document.createElement("div");
+            row.className = "form-row";
+
+            const lbl = document.createElement("label");
+            lbl.textContent = col;
+            if (field !== "other") {
+              const t = document.createElement("span");
+              t.className = "field-type " + field;
+              t.textContent = field;
+              lbl.appendChild(t);
+            }
+            row.appendChild(lbl);
+
+            const inp = document.createElement("input");
+            inp.type = "text";
+            inp.dataset.col = col;
+            inp.autocomplete = "off";
+            inp.spellcheck = false;
+            inp.value = seed[col] || "";
+            row.appendChild(inp);
+            frag.appendChild(row);
+          });
+          body.appendChild(frag);
+
+          els.contactModal.hidden = false;
+          setTimeout(() => {
+            const firstInput = body.querySelector("input[data-col]");
+            if (firstInput) firstInput.focus();
+          }, 40);
+        }
+
+        function closeContactModal() {
+          els.contactModal.hidden = true;
+          state.editingId = null;
+          els.modalBody.innerHTML = "";
+        }
+
+        function readContactForm() {
+          const values = {};
+          els.modalBody.querySelectorAll("input[data-col]").forEach((inp) => {
+            values[inp.dataset.col] = inp.value;
+          });
+          return values;
+        }
+
+        function saveContact(e) {
+          e.preventDefault();
+
+          // Make sure we actually have columns to store the values in.
+          if (!state.columns.length) {
+            state.columns = DEFAULT_COLUMNS.slice();
+            state.colMap = defaultColMap();
+            state.columns.forEach(function (col) {
+              if (state.visibleColumns[col] === undefined)
+                state.visibleColumns[col] = true;
+            });
+          }
+
+          const values = readContactForm();
+          const isEdit = state.editingId != null;
+          const now = Date.now();
+
+          pushHistory();
+
+          if (isEdit) {
+            const target = state.contacts.find(function (x) {
+              return x._sid
+                ? x._sid === state.editingId
+                : x.id === Number(state.editingId);
+            });
+            if (!target) {
+              closeContactModal();
+              return;
+            }
+            target.values = Object.assign({}, values);
+            target.editedAt = now;
+            if (target.editKind !== "added") target.editKind = "edited";
+            rebuildContactDerived(target, state.columns, state.colMap);
+          } else {
+            const c = {
+              id: state.contacts.length,
+              _sid: makeSid(),
+              values: Object.assign({}, values),
+              name: "",
+              phones: [],
+              emails: [],
+              keys: { phone: [], email: [], name: [] },
+              groupId: null,
+              searchText: "",
+              editedAt: now,
+              editKind: "added",
+            };
+            rebuildContactDerived(c, state.columns, state.colMap);
+            state.contacts.push(c);
+          }
+
+          rebuildIds();
+          closeContactModal();
+          recomputeAndRender();
+        }
+
+        /* =====================================================================
+     DELETE / BULK ACTIONS
+     ===================================================================== */
+
+        function confirmAction(opts) {
+          if (typeof Swal === "undefined") {
+            return Promise.resolve(
+              window.confirm(opts.fallback || opts.title || "Are you sure?"),
+            );
+          }
+          return Swal.fire({
+            title: opts.title,
+            html: opts.html,
+            icon: opts.icon || "warning",
+            showCancelButton: true,
+            confirmButtonText: opts.confirmText || "Confirm",
+            cancelButtonText: opts.cancelText || "Cancel",
+            reverseButtons: true,
+            focusCancel: !!opts.focusCancel,
+          }).then(function (r) {
+            return !!(r && r.isConfirmed);
+          });
+        }
+
+        function deleteContacts(sids) {
+          const list = (sids || []).filter(Boolean);
+          if (!list.length) return;
+          pushHistory();
+          const kill = new Set(list);
+          state.contacts = state.contacts.filter(function (c) {
+            return !kill.has(c._sid);
+          });
+          kill.forEach(function (sid) {
+            state.selectedSids.delete(sid);
+          });
+          rebuildIds();
+          recomputeAndRender();
+        }
+
+        function deleteSingleContact(sid) {
+          const c = state.contacts.find(function (x) {
+            return x._sid === sid;
+          });
+          if (!c) return;
+          const label = c.name || "(no name)";
+          confirmAction({
+            title: "Delete this contact?",
+            html:
+              "<b>" +
+              escapeHtml(label) +
+              "</b> will be removed from the list.<br>You can undo this with <b>Ctrl+Z</b>.",
+            confirmText: "Delete",
+            fallback: 'Delete "' + label + '"?',
+          }).then(function (ok) {
+            if (ok) deleteContacts([sid]);
+          });
+        }
+
+        function deleteSelectedContacts() {
+          const n = state.selectedSids.size;
+          if (!n) return;
+          confirmAction({
+            title: "Delete " + n + " contact" + (n === 1 ? "" : "s") + "?",
+            html:
+              "The selected " +
+              n +
+              " contact" +
+              (n === 1 ? "" : "s") +
+              " will be removed from the list.<br>You can undo this with <b>Ctrl+Z</b>.",
+            confirmText: "Delete all",
+            fallback: "Delete " + n + " selected contacts?",
+          }).then(function (ok) {
+            if (ok) deleteContacts(Array.from(state.selectedSids));
+          });
+        }
+
+        function escapeHtml(s) {
+          return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function downloadFile(filename, content, mime) {
+          const blob = new Blob([content], {
+            type: mime || "text/plain;charset=utf-8",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () {
+            URL.revokeObjectURL(url);
+            if (a.parentNode) a.parentNode.removeChild(a);
+          }, 0);
+        }
+
+        function toast(title, text, icon) {
+          if (typeof Swal === "undefined") {
+            if (text) console.log(title + " — " + text);
+            else console.log(title);
+            return;
+          }
+          Swal.fire({
+            toast: true,
+            position: "bottom-end",
+            icon: icon || "info",
+            title: title,
+            text: text || "",
+            showConfirmButton: false,
+            timer: 2800,
+            timerProgressBar: true,
+          });
+        }
+
+        /* =====================================================================
+     VCF EXPORT
+     ===================================================================== */
+
+        function escVCard(s) {
+          return String(s == null ? "" : s)
+            .replace(/\\/g, "\\\\")
+            .replace(/\r?\n/g, "\\n")
+            .replace(/,/g, "\\,")
+            .replace(/;/g, "\\;");
+        }
+
+        function collectField(c, field) {
+          const out = [];
+          state.columns.forEach(function (col) {
+            if (state.colMap[col] !== field) return;
+            const v = c.values[col];
+            if (v == null) return;
+            const s = String(v).trim();
+            if (!s) return;
+            out.push(s);
+          });
+          return out;
+        }
+
+        function contactToVCard(c) {
+          const names = collectField(c, "name");
+          const firsts = collectField(c, "first");
+          const lasts = collectField(c, "last");
+          const phones = [];
+          collectField(c, "phone").forEach(function (v) {
+            splitList(v).forEach(function (p) {
+              phones.push(p);
+            });
+          });
+          const emails = [];
+          collectField(c, "email").forEach(function (v) {
+            splitList(v).forEach(function (m) {
+              emails.push(m);
+            });
+          });
+          const orgs = collectField(c, "org");
+          const titles = collectField(c, "title");
+          const addrs = collectField(c, "address");
+          const notes = collectField(c, "note");
+
+          const first = firsts[0] || "";
+          const last = lasts[0] || "";
+          let full =
+            names[0] || [first, last].filter(Boolean).join(" ") || c.name || "";
+
+          const lines = ["BEGIN:VCARD", "VERSION:3.0"];
+          lines.push("FN:" + escVCard(full));
+          lines.push("N:" + escVCard(last) + ";" + escVCard(first) + ";;;");
+          phones.forEach(function (p) {
+            lines.push("TEL;TYPE=CELL:" + escVCard(p));
+          });
+          emails.forEach(function (m) {
+            lines.push("EMAIL;TYPE=INTERNET:" + escVCard(m));
+          });
+          if (orgs[0]) lines.push("ORG:" + escVCard(orgs[0]));
+          if (titles[0]) lines.push("TITLE:" + escVCard(titles[0]));
+          addrs.forEach(function (a) {
+            lines.push("ADR;TYPE=HOME:;;" + escVCard(a) + ";;;;");
+          });
+          notes.forEach(function (n) {
+            lines.push("NOTE:" + escVCard(n));
+          });
+          lines.push("END:VCARD");
+          return lines.join("\r\n");
+        }
+
+        function exportSelectedVcf() {
+          const sel = state.contacts.filter(function (c) {
+            return c._sid && state.selectedSids.has(c._sid);
+          });
+          if (!sel.length) return;
+          const content = sel.map(contactToVCard).join("\r\n") + "\r\n";
+          const base =
+            String(state.loadedName || "contacts")
+              .replace(/\.[^.]+$/, "")
+              .trim() || "contacts";
+          downloadFile(
+            base + "-selected-" + sel.length + ".vcf",
+            content,
+            "text/vcard;charset=utf-8",
+          );
+          toast(
+            "Exported " +
+              sel.length +
+              " contact" +
+              (sel.length === 1 ? "" : "s"),
+            "VCF file downloaded.",
+            "success",
+          );
+        }
+
+        /* =====================================================================
+     FILE PARSING
+     ===================================================================== */
+
+        function parseDelimitedText(text, delimiter) {
+          const rows = parseDelimited(text, delimiter).filter(function (r) {
+            return r.some(function (c) {
+              return String(c).trim() !== "";
+            });
+          });
+          if (!rows.length) return { objects: [], columns: [], colMap: {} };
+
+          let columns, dataRows;
+          if (detectHeader(rows)) {
+            columns = dedupeHeaders(rows[0]);
+            dataRows = rows.slice(1);
+          } else {
+            let width = 0;
+            rows.forEach(function (r) {
+              if (r.length > width) width = r.length;
+            });
+            columns = [];
+            for (let i = 0; i < width; i++) columns.push("Column " + (i + 1));
+            dataRows = rows;
+          }
+
+          const objects = dataRows
+            .map(function (r) {
+              const o = {};
+              columns.forEach(function (col, i) {
+                o[col] = r[i] == null ? "" : String(r[i]).trim();
+              });
+              return o;
+            })
+            .filter(function (o) {
+              return Object.keys(o).some(function (k) {
+                return o[k] !== "";
+              });
+            });
+
+          const colMap = {};
+          columns.forEach(function (c) {
+            colMap[c] = detectField(c);
+          });
+          refineColMap(objects, columns, colMap);
+          return { objects: objects, columns: columns, colMap: colMap };
+        }
+
+        function parseJSONText(text) {
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (err) {
+            throw new Error("That JSON file could not be parsed.");
+          }
+          let arr = null;
+          if (Array.isArray(data)) arr = data;
+          else if (data && Array.isArray(data.contacts)) arr = data.contacts;
+          else if (data && Array.isArray(data.data)) arr = data.data;
+          else if (data && typeof data === "object") arr = [data];
+
+          if (!arr)
+            throw new Error("JSON must be an array of contact objects.");
+
+          const objects = arr
+            .filter(function (o) {
+              return o && typeof o === "object" && !Array.isArray(o);
+            })
+            .map(function (o) {
+              const rec = {};
+              Object.keys(o).forEach(function (k) {
+                const v = o[k];
+                if (v == null) rec[k] = "";
+                else if (Array.isArray(v))
+                  rec[k] = v
+                    .map(function (x) {
+                      return typeof x === "object"
+                        ? JSON.stringify(x)
+                        : String(x);
+                    })
+                    .join(" / ");
+                else if (typeof v === "object") rec[k] = JSON.stringify(v);
+                else rec[k] = String(v);
+              });
+              return rec;
+            });
+
+          const columns = [];
+          const seen = new Set();
+          objects.forEach(function (o) {
+            Object.keys(o).forEach(function (k) {
+              if (!seen.has(k)) {
+                seen.add(k);
+                columns.push(k);
+              }
+            });
+          });
+          if (!columns.length) columns = DEFAULT_COLUMNS.slice();
+
+          const colMap = {};
+          columns.forEach(function (c) {
+            colMap[c] = detectField(c);
+          });
+          refineColMap(objects, columns, colMap);
+          return { objects: objects, columns: columns, colMap: colMap };
+        }
+
+        function refineColMap(rows, columns, colMap) {
+          const sample = rows.slice(0, 60);
+          if (!sample.length) return colMap;
+
+          columns.forEach(function (col) {
+            const current = colMap[col];
+            if (current && current !== "other") return;
+            let filled = 0,
+              emailHits = 0,
+              phoneHits = 0;
+            sample.forEach(function (row) {
+              const v = String((row && row[col]) || "").trim();
+              if (!v) return;
+              filled++;
+              if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) emailHits++;
+              else if (normPhone(v) && /^[+()\-.\s\d]+$/.test(v)) phoneHits++;
+            });
+            if (!filled) return;
+            if (emailHits / filled >= 0.6) colMap[col] = "email";
+            else if (phoneHits / filled >= 0.6) colMap[col] = "phone";
+          });
+
+          const hasName = columns.some(function (col) {
+            return ["name", "first", "last"].indexOf(colMap[col]) !== -1;
+          });
+          if (!hasName) {
+            for (let i = 0; i < columns.length; i++) {
+              const col = columns[i];
+              if (colMap[col] && colMap[col] !== "other") continue;
+              const vals = sample
+                .map(function (r) {
+                  return String((r && r[col]) || "").trim();
+                })
+                .filter(Boolean);
+              if (!vals.length) continue;
+              const looksTexty = vals.every(function (v) {
+                return !/^[+()\-.\s\d]+$/.test(v);
+              });
+              if (looksTexty) {
+                colMap[col] = "name";
+                break;
+              }
+            }
+          }
+          return colMap;
+        }
+
+        function parseAnyFile(text, ext) {
+          const trimmed = text.trim();
+          if (!trimmed) throw new Error("The file appears to be empty.");
+
+          if (
+            ext === "vcf" ||
+            ext === "vcard" ||
+            /BEGIN:VCARD/i.test(trimmed.slice(0, 300))
+          ) {
+            return parseVCard(text);
+          }
+          if (
+            ext === "json" ||
+            trimmed.charAt(0) === "[" ||
+            trimmed.charAt(0) === "{"
+          ) {
+            return parseJSONText(text);
+          }
+          const delimiter = ext === "tsv" ? "\t" : detectDelimiter(text);
+          return parseDelimitedText(text, delimiter);
+        }
+
+        function loadFile(file) {
+          const name = file.name || "contacts";
+          const ext = (name.split(".").pop() || "").toLowerCase();
+          const reader = new FileReader();
+
+          reader.onerror = function () {
+            toast("Couldn't read that file", "Please try again.", "error");
+          };
+
+          reader.onload = function () {
+            let parsed;
+            try {
+              const text = stripBOM(String(reader.result || ""));
+              parsed = parseAnyFile(text, ext);
+            } catch (err) {
+              toast(
+                "Couldn't parse that file",
+                (err && err.message) || "Unsupported or malformed file.",
+                "error",
+              );
+              return;
+            }
+            if (!parsed || !parsed.objects.length) {
+              toast(
+                "No contacts found",
+                "The file didn't contain any readable rows.",
+                "warning",
+              );
+              return;
+            }
+            applyParsedFile(parsed, name);
+          };
+
+          reader.readAsText(file);
+        }
+
+        function applyParsedFile(parsed, name) {
+          const doApply = function () {
+            pushHistory();
+
+            state.columns = parsed.columns.slice();
+            state.colMap = Object.assign({}, parsed.colMap);
+            state.visibleColumns = {};
+            state.columns.forEach(function (col) {
+              state.visibleColumns[col] = true;
+            });
+            state.loadedName = name;
+            state.contacts = buildContacts(
+              parsed.objects,
+              state.columns,
+              state.colMap,
+            );
+            state.selectedGroup = null;
+            state.selectedSids.clear();
+            state.search = "";
+            els.search.value = "";
+            state.showRecentOnly = false;
+            els.showRecent.checked = false;
+            state.editingId = null;
+
+            recomputeAndRender();
+            saveStateNow();
+
+            const n = state.contacts.length;
+            const g = state.groups.length;
+            toast(
+              "Loaded " +
+                n.toLocaleString() +
+                " contact" +
+                (n === 1 ? "" : "s"),
+              g
+                ? g + " duplicate group" + (g === 1 ? "" : "s") + " found."
+                : "No duplicates found.",
+              g ? "success" : "info",
+            );
+
+            const mapped = state.columns.filter(function (c) {
+              return state.colMap[c] && state.colMap[c] !== "other";
+            }).length;
+            if (mapped === 0 && state.columns.length > 1) {
+              openColumnModal();
+            }
+          };
+
+          if (state.contacts.length) {
+            confirmAction({
+              title: "Replace the current list?",
+              html:
+                "You currently have <b>" +
+                state.contacts.length.toLocaleString() +
+                "</b> contact(s) loaded. Loading <b>" +
+                escapeHtml(name) +
+                "</b> will replace them.<br>You can undo this with <b>Ctrl+Z</b>.",
+              confirmText: "Replace",
+              cancelText: "Keep current",
+              icon: "question",
+            }).then(function (ok) {
+              if (ok) doApply();
+            });
+          } else {
+            doApply();
+          }
+        }
+
+        /* =====================================================================
+     COLUMN MAPPING MODAL
+     ===================================================================== */
+
+        function renderColumnModal() {
+          const body = els.colModalBody;
+          body.innerHTML = "";
+
+          const legend = document.createElement("div");
+          legend.className = "col-legend";
+          const s1 = document.createElement("span");
+          s1.innerHTML =
+            "<b>Phone</b>, <b>Email</b> and <b>Name</b> fields drive duplicate detection.";
+          legend.appendChild(s1);
+          body.appendChild(legend);
+
+          const list = document.createElement("div");
+          list.className = "col-list";
+
+          state.columns.forEach(function (col) {
+            const row = document.createElement("div");
+            row.className = "col-row";
+
+            const nameEl = document.createElement("span");
+            nameEl.className = "col-name";
+            nameEl.textContent = col;
+            nameEl.title = col;
+            row.appendChild(nameEl);
+
+            const sel = document.createElement("select");
+            sel.dataset.col = col;
+            FIELD_OPTIONS.forEach(function (opt) {
+              const o = document.createElement("option");
+              o.value = opt.value;
+              o.textContent = opt.label;
+              sel.appendChild(o);
+            });
+            sel.value = state.colMap[col] || "other";
+            row.appendChild(sel);
+
+            list.appendChild(row);
+          });
+
+          body.appendChild(list);
+        }
+
+        function openColumnModal() {
+          if (!state.columns.length) {
+            toast(
+              "No columns yet",
+              "Load a contact file or add a contact first.",
+              "info",
+            );
+            return;
+          }
+          renderColumnModal();
+          els.colModal.hidden = false;
+        }
+
+        function closeColumnModal() {
+          els.colModal.hidden = true;
+          els.colModalBody.innerHTML = "";
+        }
+
+        function applyColumnMapping() {
+          const next = {};
+          els.colModalBody
+            .querySelectorAll("select[data-col]")
+            .forEach(function (sel) {
+              next[sel.dataset.col] = sel.value;
+            });
+
+          pushHistory();
+          state.columns.forEach(function (col) {
+            state.colMap[col] = next[col] || "other";
+          });
+          state.contacts.forEach(function (c) {
+            rebuildContactDerived(c, state.columns, state.colMap);
+          });
+
+          closeColumnModal();
+          recomputeAndRender();
+          toast(
+            "Column mapping applied",
+            "Duplicate detection has been re-run.",
+            "success",
+          );
+        }
+
+        function autoDetectColumns() {
+          state.columns.forEach(function (col) {
+            state.colMap[col] = detectField(col);
+          });
+          const rows = state.contacts.slice(0, 60).map(function (c) {
+            return c.values;
+          });
+          refineColMap(rows, state.columns, state.colMap);
+          renderColumnModal();
+        }
+
+        /* =====================================================================
+     UI HELPERS
+     ===================================================================== */
+
+        function scrollToFirstGroupRow(g) {
+          if (!g || !g.contacts.length) return;
+          const c = state.contacts[g.contacts[0]];
+          if (!c || !c._sid) return;
+          const tr = els.tbody.querySelector('tr[data-sid="' + c._sid + '"]');
+          if (tr && tr.scrollIntoView)
+            tr.scrollIntoView({ block: "center", behavior: "smooth" });
+        }
+
+        function toggleColDropdown(force) {
+          const menu = els.colDropdownMenu;
+          const open = force != null ? !!force : menu.hidden;
+          menu.hidden = !open;
+        }
+
+        /* =====================================================================
+     EVENT WIRING
+     ===================================================================== */
+
+        // --- Top bar -------------------------------------------------------
+        els.fileInput.addEventListener("change", function (e) {
+          const f = e.target.files && e.target.files[0];
+          e.target.value = "";
+          if (f) loadFile(f);
+        });
+
+        // --- Search / filters ----------------------------------------------
+        els.search.addEventListener("input", function () {
+          state.search = els.search.value;
+          renderTable();
+          scheduleSave();
+        });
+
+        els.showRecent.addEventListener("change", function () {
+          state.showRecentOnly = els.showRecent.checked;
+          renderAll();
+          scheduleSave();
+        });
+
+        els.clearRecentBtn.addEventListener("click", function () {
+          let n = 0;
+          state.contacts.forEach(function (c) {
+            if (c.editedAt) {
+              c.editedAt = null;
+              c.editKind = null;
+              n++;
+            }
+          });
+          if (!n) return;
+          state.showRecentOnly = false;
+          els.showRecent.checked = false;
+          renderAll();
+          saveStateNow();
+          toast(
+            "Markers cleared",
+            n + " contact" + (n === 1 ? "" : "s") + " unmarked.",
+            "success",
+          );
+        });
+
+        els.matchPhone.addEventListener("change", function () {
+          state.match.phone = els.matchPhone.checked;
+          recomputeAndRender();
+        });
+        els.matchEmail.addEventListener("change", function () {
+          state.match.email = els.matchEmail.checked;
+          recomputeAndRender();
+        });
+        els.matchName.addEventListener("change", function () {
+          state.match.name = els.matchName.checked;
+          recomputeAndRender();
+        });
+
+        els.onlyNoName.addEventListener("change", function () {
+          state.onlyNoName = els.onlyNoName.checked;
+          if (state.onlyNoName && state.selectedGroup) {
+            const g = state.groups.find(function (x) {
+              return x.id === state.selectedGroup;
+            });
+            if (!g || !isNoNameGroup(g)) state.selectedGroup = null;
+          }
+          renderAll();
+          scheduleSave();
+        });
+
+        // --- History --------------------------------------------------------
+        els.undoBtn.addEventListener("click", undo);
+        els.redoBtn.addEventListener("click", redo);
+
+        // --- Add contact ----------------------------------------------------
+        els.addBtn.addEventListener("click", function () {
+          openContactModal(null);
+        });
+
+        // --- Contact modal --------------------------------------------------
+        els.modalForm.addEventListener("submit", saveContact);
+        els.modalClose.addEventListener("click", closeContactModal);
+        els.modalCancel.addEventListener("click", closeContactModal);
+        els.contactModal.addEventListener("mousedown", function (e) {
+          if (e.target === els.contactModal) closeContactModal();
+        });
+
+        // --- Column modal ---------------------------------------------------
+        els.colModalClose.addEventListener("click", closeColumnModal);
+        els.colModalCancel.addEventListener("click", closeColumnModal);
+        els.colModalSave.addEventListener("click", applyColumnMapping);
+        els.colModalAuto.addEventListener("click", autoDetectColumns);
+        els.colModal.addEventListener("mousedown", function (e) {
+          if (e.target === els.colModal) closeColumnModal();
+        });
+
+        // --- Column dropdown ------------------------------------------------
+        els.colDropdownBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          toggleColDropdown();
+        });
+        document.addEventListener("click", function (e) {
+          if (els.colDropdownMenu.hidden) return;
+          if (els.colDropdownMenu.contains(e.target)) return;
+          if (els.colDropdownBtn.contains(e.target)) return;
+          els.colDropdownMenu.hidden = true;
+        });
+
+        // --- Filter chip ----------------------------------------------------
+        els.filterChip.addEventListener("click", function () {
+          state.selectedGroup = null;
+          renderAll();
+          scheduleSave();
+        });
+
+        // --- Table interactions ---------------------------------------------
+        els.thead.addEventListener("change", function (e) {
+          if (e.target && e.target.id === "selectAllCheck") {
+            const checked = e.target.checked;
+            getVisibleContacts().forEach(function (c) {
+              if (!c._sid) return;
+              if (checked) state.selectedSids.add(c._sid);
+              else state.selectedSids.delete(c._sid);
+            });
+            renderTable();
+            updateBulkBar();
+          }
+        });
+
+        els.tbody.addEventListener("change", function (e) {
+          const cb = e.target.closest
+            ? e.target.closest('input[type="checkbox"][data-sid]')
+            : null;
+          if (!cb) return;
+          const sid = cb.dataset.sid;
+          if (!sid) return;
+          if (cb.checked) state.selectedSids.add(sid);
+          else state.selectedSids.delete(sid);
+          const tr = cb.closest("tr");
+          if (tr) tr.classList.toggle("row-checked", cb.checked);
+          updateBulkBar();
+          updateSelectAllState();
+        });
+
+        els.tbody.addEventListener("click", function (e) {
+          const btn = e.target.closest
+            ? e.target.closest("button[data-act]")
+            : null;
+          if (!btn) return;
+          const id = btn.dataset.id;
+          if (btn.dataset.act === "edit") openContactModal(id);
+          else if (btn.dataset.act === "delete") deleteSingleContact(id);
+        });
+
+        // --- Sidebar ---------------------------------------------------------
+        els.sidebar.addEventListener("click", function (e) {
+          const card = e.target.closest
+            ? e.target.closest(".group-card")
+            : null;
+          if (!card) return;
+          const gid = card.dataset.group;
+          state.selectedGroup = state.selectedGroup === gid ? null : gid;
+          renderAll();
+          scheduleSave();
+          if (state.selectedGroup) {
+            const g = state.groups.find(function (x) {
+              return x.id === state.selectedGroup;
+            });
+            scrollToFirstGroupRow(g);
+          }
+        });
+
+        // --- Bulk bar ---------------------------------------------------------
+        els.bulkClearBtn.addEventListener("click", function () {
+          state.selectedSids.clear();
+          renderTable();
+          updateBulkBar();
+        });
+        els.bulkDeleteBtn.addEventListener("click", deleteSelectedContacts);
+        els.bulkExportVcfBtn.addEventListener("click", exportSelectedVcf);
+
+        // --- Drag & drop -------------------------------------------------------
+        let dragDepth = 0;
+        window.addEventListener("dragenter", function (e) {
+          if (!e.dataTransfer) return;
+          const types = e.dataTransfer.types || [];
+          if (Array.prototype.indexOf.call(types, "Files") === -1) return;
+          e.preventDefault();
+          dragDepth++;
+          els.dropOverlay.classList.add("show");
+        });
+        window.addEventListener("dragover", function (e) {
+          if (!e.dataTransfer) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        });
+        window.addEventListener("dragleave", function () {
+          dragDepth = Math.max(0, dragDepth - 1);
+          if (dragDepth === 0) els.dropOverlay.classList.remove("show");
+        });
+        window.addEventListener("drop", function (e) {
+          if (!e.dataTransfer) return;
+          e.preventDefault();
+          dragDepth = 0;
+          els.dropOverlay.classList.remove("show");
+          const f = e.dataTransfer.files && e.dataTransfer.files[0];
+          if (f) loadFile(f);
+        });
+
+        // --- Keyboard shortcuts -------------------------------------------------
+        document.addEventListener("keydown", function (e) {
+          const t = e.target;
+          const tag = (t && t.tagName) || "";
+          const typing =
+            /^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (t && t.isContentEditable);
+          const mod = e.ctrlKey || e.metaKey;
+          const key = (e.key || "").toLowerCase();
+
+          if (mod && key === "z" && !e.shiftKey) {
+            if (typing) return;
+            e.preventDefault();
+            undo();
+            return;
+          }
+          if (mod && (key === "y" || (key === "z" && e.shiftKey))) {
+            if (typing) return;
+            e.preventDefault();
+            redo();
+            return;
+          }
+          if (mod && key === "f") {
+            e.preventDefault();
+            els.search.focus();
+            els.search.select();
+            return;
+          }
+          if (mod && key === "a" && !typing) {
+            e.preventDefault();
+            getVisibleContacts().forEach(function (c) {
+              if (c._sid) state.selectedSids.add(c._sid);
+            });
+            renderTable();
+            updateBulkBar();
+            return;
+          }
+          if (e.key === "Escape") {
+            if (!els.contactModal.hidden) {
+              closeContactModal();
+              return;
+            }
+            if (!els.colModal.hidden) {
+              closeColumnModal();
+              return;
+            }
+            if (!els.colDropdownMenu.hidden) {
+              els.colDropdownMenu.hidden = true;
+              return;
+            }
+            if (state.selectedGroup) {
+              state.selectedGroup = null;
+              renderAll();
+              scheduleSave();
+            }
+          }
+        });
+
+        // --- Persistence hooks ---------------------------------------------------
+        window.addEventListener("beforeunload", flushPendingSave);
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "hidden") flushPendingSave();
+        });
+        window.addEventListener("pagehide", flushPendingSave);
+
+        /* =====================================================================
+     INIT
+     ===================================================================== */
+
+        function init() {
+          loadStoredState();
+          renderAll();
+          updateHistoryButtons();
+          updateBulkBar();
+        }
+
+        init();
+      })();
+    </script>
+  </body>
+</html>

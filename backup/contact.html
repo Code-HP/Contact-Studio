@@ -1,0 +1,4017 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contact Editor</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+      :root {
+        --bg: #f4f5f8;
+        --panel: #fff;
+        --border: #e3e6ec;
+        --border-strong: #d2d7df;
+        --text: #161a20;
+        --muted: #697386;
+        --accent: #4f46e5;
+        --accent-dark: #4338ca;
+        --accent-soft: #eef2ff;
+        --danger: #dc2626;
+        --danger-soft: #fef2f2;
+        --success: #047857;
+        --warn: #b45309;
+        --radius: 12px;
+        --shadow:
+          0 1px 2px rgba(16, 24, 40, 0.06),
+          0 8px 24px -12px rgba(16, 24, 40, 0.18);
+        --shadow-lg: 0 30px 80px -24px rgba(15, 23, 42, 0.45);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          Arial,
+          sans-serif;
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #d7dbe3;
+        border-radius: 99px;
+        border: 3px solid transparent;
+        background-clip: content-box;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #b9bfc9;
+        background-clip: content-box;
+      }
+
+      .app {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      /* ---------- Topbar ---------- */
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+        padding: 10px 18px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 1px 0 rgba(16, 24, 40, 0.02);
+        z-index: 40;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-width: 0;
+      }
+      .logo {
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-size: 19px;
+        font-weight: 700;
+        flex: none;
+        box-shadow: 0 8px 18px -10px rgba(99, 102, 241, 0.9);
+      }
+      .brand h1 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+      }
+      .brand p {
+        margin: 2px 0 0;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 8px 13px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: #fff;
+        color: var(--text);
+        font-weight: 550;
+        font-size: 13px;
+        white-space: nowrap;
+        transition:
+          background 0.15s,
+          border-color 0.15s,
+          transform 0.06s,
+          box-shadow 0.15s;
+      }
+      .btn:hover {
+        background: #f7f8fa;
+        border-color: var(--border-strong);
+      }
+      .btn:active {
+        transform: translateY(1px);
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+        box-shadow: 0 6px 16px -8px rgba(79, 70, 229, 0.9);
+      }
+      .btn.primary:hover {
+        background: var(--accent-dark);
+        border-color: var(--accent-dark);
+      }
+      .btn.ghost {
+        background: transparent;
+      }
+      .btn.danger {
+        color: var(--danger);
+        border-color: #f2c7c7;
+      }
+      .btn.danger:hover {
+        background: var(--danger-soft);
+      }
+      .btn[disabled] {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+      .btn.small {
+        padding: 5px 9px;
+        font-size: 11.5px;
+        border-radius: 7px;
+      }
+      .save-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--warn);
+        box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.13);
+      }
+      .save-dot[hidden] {
+        display: none;
+      }
+      .btn.dirty {
+        border-color: #fcd34d;
+        background: #fffbeb;
+        color: #92400e;
+      }
+      .btn.just-saved {
+        background: #dcfce7;
+        border-color: #86efac;
+        color: #166534;
+      }
+
+      /* ---------- Menus ---------- */
+      .menu {
+        position: relative;
+      }
+      .menu-list {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 6px);
+        z-index: 60;
+        min-width: 200px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 11px;
+        padding: 6px;
+        box-shadow: var(--shadow-lg);
+        animation: pop 0.13s ease;
+      }
+      .menu-list[hidden] {
+        display: none;
+      }
+      .menu-list button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        text-align: left;
+        padding: 8px 10px;
+        border: 0;
+        background: transparent;
+        border-radius: 7px;
+        color: var(--text);
+        font-size: 13px;
+      }
+      .menu-list button:hover {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .menu-sep {
+        height: 1px;
+        background: var(--border);
+        margin: 5px 4px;
+      }
+      @keyframes pop {
+        from {
+          transform: translateY(-4px) scale(0.985);
+          opacity: 0;
+        }
+      }
+
+      /* ---------- Layout ---------- */
+      main {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 340px minmax(460px, 1fr) 310px;
+        min-height: 0;
+      }
+      .sidebar {
+        background: #fff;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .search {
+        padding: 12px 12px 10px;
+      }
+      .search input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #f8f9fb;
+        outline: 0;
+        font-size: 13.5px;
+        transition: 0.15s;
+      }
+      .search input:focus {
+        border-color: var(--accent);
+        background: #fff;
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+      .new-contact-wrap {
+        padding: 0 12px 10px;
+      }
+      .new-contact-wrap .btn {
+        width: 100%;
+      }
+
+      .selection-bar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 0 12px 10px;
+        padding: 7px 8px 7px 11px;
+        border-radius: 10px;
+        background: var(--accent-soft);
+        border: 1px solid #c7d2fe;
+        color: var(--accent-dark);
+        font-size: 12px;
+        font-weight: 650;
+      }
+      .selection-bar.show {
+        display: flex;
+      }
+      .selection-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .mini-btn {
+        border: 1px solid #c7d2fe;
+        background: #fff;
+        color: var(--accent-dark);
+        border-radius: 7px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.35;
+        transition: 0.13s;
+      }
+      .mini-btn:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .mini-btn.danger {
+        border-color: #fecaca;
+        color: #991b1b;
+      }
+      .mini-btn.danger:hover {
+        background: var(--danger);
+        border-color: var(--danger);
+        color: #fff;
+      }
+      .mini-btn[disabled] {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      .list-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 14px 8px;
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+      .lt-check {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        cursor: pointer;
+        user-select: none;
+        font-weight: 600;
+      }
+      .lt-check input {
+        width: 15px;
+        height: 15px;
+        margin: 0;
+        accent-color: var(--accent);
+        cursor: pointer;
+      }
+
+      .list {
+        flex: 1;
+        overflow: auto;
+        padding: 0 7px 7px;
+      }
+      .contact-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        text-align: left;
+        padding: 8px 9px;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        background: transparent;
+        transition: 0.12s;
+        cursor: pointer;
+        user-select: none;
+        outline: 0;
+      }
+      .contact-item:hover {
+        background: #f6f7f9;
+      }
+      .contact-item:focus-visible {
+        border-color: var(--accent);
+      }
+      .contact-item.active {
+        background: var(--accent-soft);
+        border-color: #dbe1fe;
+      }
+      .contact-item.active .ci-name {
+        color: var(--accent);
+      }
+      .contact-item.is-dup {
+        box-shadow: inset 3px 0 0 var(--danger);
+      }
+      .ci-check {
+        width: 16px;
+        height: 16px;
+        flex: none;
+        margin: 0;
+        accent-color: var(--accent);
+        cursor: pointer;
+        opacity: 0.45;
+        transition: opacity 0.12s;
+      }
+      .contact-item:hover .ci-check,
+      .ci-check:checked,
+      .contact-item.active .ci-check {
+        opacity: 1;
+      }
+      .avatar {
+        width: 36px;
+        height: 36px;
+        flex: none;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: 650;
+        font-size: 13px;
+      }
+      .avatar.big {
+        width: 46px;
+        height: 46px;
+        font-size: 15px;
+      }
+      .ci-body {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        flex: 1;
+      }
+      .ci-name {
+        font-weight: 600;
+        font-size: 13.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .ci-sub {
+        font-size: 12px;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .ci-dup {
+        font-size: 9.5px;
+        color: var(--danger);
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        background: var(--danger-soft);
+        border-radius: 5px;
+        padding: 2px 5px;
+      }
+      .list-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 13px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .link {
+        border: 0;
+        background: none;
+        color: var(--danger);
+        font-size: 12px;
+        padding: 0;
+      }
+      .link:hover {
+        text-decoration: underline;
+      }
+      .empty {
+        padding: 40px 18px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .empty .empty-icon {
+        font-size: 30px;
+        margin-bottom: 8px;
+      }
+      .empty p {
+        margin: 3px 0;
+        font-size: 13px;
+      }
+
+      /* ---------- Editor ---------- */
+      .editor {
+        overflow: auto;
+        padding: 22px;
+      }
+      .editor-card {
+        max-width: 980px;
+        margin: 0 auto;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .editor-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, #fcfcfd, #fafbfc);
+      }
+      .eh-left {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        min-width: 0;
+      }
+      .eh-left h2 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+      }
+      .eh-left p {
+        margin: 2px 0 0;
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+      .eh-right {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 15px 18px;
+        padding: 22px;
+      }
+      .form-grid[data-disabled="true"] {
+        opacity: 0.45;
+        pointer-events: none;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+      .field.wide {
+        grid-column: 1/-1;
+      }
+      .field[hidden] {
+        display: none;
+      }
+      .field > span {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .field input,
+      .field textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: #fbfbfc;
+        outline: 0;
+        color: var(--text);
+        resize: vertical;
+        transition: 0.15s;
+      }
+      .field input:focus,
+      .field textarea:focus {
+        border-color: var(--accent);
+        background: #fff;
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+      .field input::placeholder,
+      .field textarea::placeholder {
+        color: #b9bfc9;
+      }
+      .phones-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .phone-row {
+        display: grid;
+        grid-template-columns: 130px minmax(0, 1fr) 34px;
+        gap: 8px;
+      }
+      .phone-row input,
+      .phone-row select {
+        width: 100%;
+        padding: 9px 11px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: #fbfbfc;
+        outline: 0;
+        color: var(--text);
+      }
+      .phone-row input:focus,
+      .phone-row select:focus {
+        border-color: var(--accent);
+        background: #fff;
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+      .phone-row select {
+        appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236b7280'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 26px;
+      }
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--muted);
+        display: grid;
+        place-items: center;
+        transition: 0.13s;
+      }
+      .icon-btn:hover {
+        background: var(--danger-soft);
+        border-color: #f0b4b4;
+        color: var(--danger);
+      }
+      .add-phone {
+        align-self: flex-start;
+        margin-top: 2px;
+      }
+
+      .undo-contact {
+        display: none;
+      }
+      .undo-contact.show {
+        display: inline-flex;
+      }
+
+      /* ---------- Right panel ---------- */
+      .right-panel {
+        background: #fff;
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .right-section {
+        border-bottom: 1px solid var(--border);
+      }
+      .right-section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 13px;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .right-section-body {
+        padding: 6px 8px 10px;
+      }
+      .right-filter {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 9px;
+        border-radius: 8px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .right-filter:hover {
+        background: #f6f7f9;
+      }
+      .right-filter input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: var(--accent);
+        cursor: pointer;
+        flex: none;
+      }
+      .right-filter span {
+        flex: 1;
+        font-size: 13px;
+      }
+      .right-filter input:checked + span {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .dup-panel {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+      }
+      .dup-group-item {
+        width: 100%;
+        border: 1px solid transparent;
+        background: transparent;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: left;
+        margin-bottom: 5px;
+        transition: 0.12s;
+      }
+      .dup-group-item:hover {
+        background: #f6f7f9;
+        border-color: var(--border);
+      }
+      .dup-group-item.active {
+        background: #fff1f2;
+        border-color: #fecaca;
+      }
+      .dup-group-title {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        min-width: 0;
+      }
+      .dup-group-title strong {
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .dup-group-count {
+        margin-left: auto;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        border-radius: 11px;
+        display: grid;
+        place-items: center;
+        background: #fee2e2;
+        color: #991b1b;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .dup-group-meta {
+        margin-top: 5px;
+        padding-left: 21px;
+        font-size: 11.5px;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .dup-group-reasons {
+        display: flex;
+        gap: 4px;
+        margin-top: 7px;
+        padding-left: 21px;
+        flex-wrap: wrap;
+      }
+      .dup-reason {
+        padding: 2px 6px;
+        border-radius: 5px;
+        font-size: 10px;
+        font-weight: 700;
+        background: var(--danger-soft);
+        color: #991b1b;
+      }
+      .dup-empty-side {
+        padding: 25px 14px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .right-panel .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+      }
+      .right-panel .filter-row .right-filter {
+        flex: 0 0 auto;
+        padding: 7px 8px;
+      }
+      .right-panel .filter-row .right-filter span {
+        white-space: nowrap;
+      }
+
+      /* ---------- Toast / dropzone ---------- */
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 24px;
+        transform: translate(-50%, 20px);
+        background: #161a20;
+        color: #fff;
+        padding: 10px 17px;
+        border-radius: 10px;
+        font-size: 13px;
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.25s;
+        z-index: 200;
+        max-width: 90vw;
+        box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      .toast.success {
+        background: var(--success);
+      }
+      .toast.error {
+        background: #b91c1c;
+      }
+      .toast.warn {
+        background: var(--warn);
+      }
+      .dropzone {
+        position: fixed;
+        inset: 0;
+        z-index: 190;
+        display: none;
+        place-items: center;
+        background: rgba(79, 70, 229, 0.1);
+        backdrop-filter: blur(3px);
+      }
+      .dropzone.show {
+        display: grid;
+      }
+      .dropzone > div {
+        padding: 34px 46px;
+        border: 2px dashed var(--accent);
+        border-radius: 18px;
+        background: #fff;
+        color: var(--accent);
+        font-weight: 650;
+        font-size: 16px;
+        box-shadow: var(--shadow-lg);
+      }
+
+      /* ---------- Modal (uses .show class) ---------- */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 170;
+        background: rgba(15, 23, 42, 0.42);
+        backdrop-filter: blur(3px);
+        display: none;
+        place-items: center;
+        padding: 20px;
+      }
+      .modal-backdrop.show {
+        display: grid;
+      }
+      .modal {
+        width: min(540px, 94vw);
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        animation: pop 0.16s ease;
+      }
+      .modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, #fcfcfd, #fafbfc);
+      }
+      .modal-head h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 650;
+      }
+      .modal-head p {
+        margin: 3px 0 0;
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+      .modal-body {
+        padding: 18px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 13px 14px;
+      }
+      .modal-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+      .modal-field[hidden] {
+        display: none;
+      }
+      .modal-field.wide {
+        grid-column: 1/-1;
+      }
+      .modal-field > span {
+        font-size: 11px;
+        font-weight: 650;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .modal-field select,
+      .modal-field input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: #fbfbfc;
+        outline: 0;
+        transition: 0.15s;
+      }
+      .modal-field select:focus,
+      .modal-field input:focus {
+        border-color: var(--accent);
+        background: #fff;
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+      .modal-note {
+        grid-column: 1/-1;
+        margin: 0;
+        padding: 9px 11px;
+        border-radius: 9px;
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+        font-size: 12px;
+        font-weight: 550;
+      }
+      .modal-foot {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 12px 18px;
+        border-top: 1px solid var(--border);
+        background: #fcfcfd;
+      }
+
+      .bulk-sheet-modal {
+        width: min(1500px, 97vw);
+        height: min(820px, 92vh);
+        display: flex;
+        flex-direction: column;
+      }
+      .bulk-sheet-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 13px 16px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, #fcfcfd, #f8f9fb);
+      }
+      .bulk-sheet-title {
+        min-width: 0;
+      }
+      .bulk-sheet-title h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .bulk-sheet-title p {
+        margin: 3px 0 0;
+        color: var(--muted);
+        font-size: 11.5px;
+      }
+      .bulk-sheet-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .bulk-sheet-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        background: #fff;
+        flex-wrap: wrap;
+      }
+      .bulk-sheet-toolbar .sheet-info {
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 11px;
+        white-space: nowrap;
+      }
+      .bulk-scope {
+        height: 32px;
+        padding: 0 30px 0 9px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--text);
+        outline: 0;
+        font-size: 12px;
+      }
+      .bulk-scope:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+      .sheet-wrap {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        background: #eef0f3;
+        border-bottom: 1px solid var(--border);
+      }
+      .bulk-sheet {
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 1450px;
+        width: max-content;
+        background: #fff;
+        font-size: 12px;
+      }
+      .bulk-sheet th,
+      .bulk-sheet td {
+        height: 36px;
+        padding: 0;
+        border-right: 1px solid #e1e4e9;
+        border-bottom: 1px solid #e1e4e9;
+        background: #fff;
+        white-space: nowrap;
+      }
+      .bulk-sheet .sheet-field {
+        width: max-content;
+        min-width: 105px;
+        max-width: 260px;
+      }
+      .bulk-sheet thead .sheet-field {
+        padding: 0 9px;
+      }
+      .bulk-sheet .sheet-field .sheet-cell {
+        width: 100%;
+        min-width: 105px;
+        max-width: 260px;
+      }
+      .bulk-sheet thead th {
+        position: sticky;
+        top: 0;
+        z-index: 8;
+        height: 38px;
+        padding: 0 9px;
+        background: #f4f5f7;
+        color: #505968;
+        font-size: 10.5px;
+        font-weight: 750;
+        text-transform: uppercase;
+        letter-spacing: 0.035em;
+        text-align: left;
+        box-shadow: 0 1px 0 #dfe3e8;
+      }
+      .bulk-sheet .sheet-no {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        width: 48px;
+        min-width: 48px;
+        max-width: 48px;
+        text-align: center;
+        color: var(--muted);
+        background: #f4f5f7;
+      }
+      .bulk-sheet .sheet-contact {
+        position: sticky;
+        left: 48px;
+        z-index: 9;
+        width: 190px;
+        min-width: 190px;
+        max-width: 190px;
+        background: #fbfbfc;
+      }
+      .bulk-sheet thead .sheet-contact {
+        z-index: 11;
+        background: #eef0f3;
+      }
+      .bulk-sheet
+        thead
+        th:not(.sheet-no):not(.sheet-contact):not(.sheet-delete) {
+        width: max-content;
+        min-width: 105px;
+        max-width: 260px;
+      }
+      .bulk-sheet .sheet-delete {
+        width: 58px;
+        min-width: 58px;
+        max-width: 58px;
+        text-align: center;
+        position: sticky;
+        right: 0;
+        background: var(--panel);
+        z-index: 12;
+      }
+      .bulk-sheet thead .sheet-delete {
+        z-index: 13;
+        background: #eef0f3;
+      }
+      .sheet-delete-btn {
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: #fff;
+        color: var(--danger);
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .sheet-delete-btn:hover {
+        background: #fff1f2;
+        border-color: #fecdd3;
+      }
+      .bulk-sheet tbody tr:hover td {
+        background: #fafbff;
+      }
+      .bulk-sheet tbody tr.changed td {
+        background: #fffbea;
+      }
+      .bulk-sheet tbody tr.changed .sheet-no {
+        box-shadow: inset 3px 0 0 #f59e0b;
+      }
+      .sheet-rowno {
+        display: grid;
+        place-items: center;
+        width: 100%;
+        height: 36px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .sheet-contact-inner {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 0 8px;
+        min-width: 0;
+      }
+      .sheet-mini-avatar {
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        flex: none;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-size: 9px;
+        font-weight: 750;
+      }
+      .sheet-contact-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 650;
+        font-size: 11.5px;
+      }
+      .sheet-cell {
+        width: 100%;
+        height: 35px;
+        padding: 0 8px;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--text);
+        font-size: 12px;
+        min-width: 88px;
+      }
+      .sheet-cell:focus {
+        background: #fff;
+        box-shadow: inset 0 0 0 2px var(--accent);
+      }
+      .sheet-cell[data-key="notes"],
+      .sheet-cell[data-key="address"] {
+        min-width: 165px;
+      }
+      .sheet-cell[data-key="email"] {
+        min-width: 155px;
+      }
+      .sheet-cell[data-key="phones"] {
+        min-width: 150px;
+      }
+      .sheet-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 9px 12px;
+        background: #fff;
+      }
+      .sheet-hint {
+        color: var(--muted);
+        font-size: 10.5px;
+      }
+      .sheet-footer-actions {
+        display: flex;
+        gap: 7px;
+      }
+      @media (max-width: 700px) {
+        .bulk-sheet-modal {
+          width: 99vw;
+          height: 94vh;
+        }
+        .bulk-sheet-toolbar .sheet-info {
+          margin-left: 0;
+          width: 100%;
+        }
+      }
+
+      /* ---------- Responsive ---------- */
+      @media (max-width: 1180px) {
+        main {
+          grid-template-columns: 310px minmax(420px, 1fr) 280px;
+        }
+      }
+      @media (max-width: 940px) {
+        main {
+          grid-template-columns: 300px 1fr;
+        }
+        .right-panel {
+          display: none;
+        }
+      }
+      @media (max-width: 700px) {
+        main {
+          grid-template-columns: 1fr;
+          grid-template-rows: 280px 1fr;
+        }
+        .sidebar {
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+        }
+        .editor {
+          padding: 12px;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+          padding: 16px;
+        }
+        .field.wide {
+          grid-column: auto;
+        }
+        .editor-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .eh-right {
+          width: 100%;
+          flex-wrap: wrap;
+        }
+        .eh-right .btn {
+          flex: 1;
+        }
+        .brand p {
+          display: none;
+        }
+        .modal-body {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- TOPBAR — site-level actions only -->
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">◎</div>
+          <div>
+            <h1>Contact Editor</h1>
+            <p>Import CSV · vCard · XLSX · XLS · ODS · JSON</p>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="btnImport">⬆ Import</button>
+
+          <div class="menu">
+            <button class="btn" id="btnExport">⬇ Export ▾</button>
+            <div class="menu-list" id="exportMenu" hidden>
+              <button data-format="csv">CSV (.csv)</button>
+              <button data-format="vcf">vCard (.vcf)</button>
+              <button data-format="xlsx">Excel (.xlsx)</button>
+              <button data-format="json">JSON (.json)</button>
+            </div>
+          </div>
+
+          <div class="menu">
+            <button class="btn" id="btnFields">
+              ⚙ Fields
+              <span
+                id="fieldBadge"
+                style="font-size: 11px; color: var(--muted)"
+              ></span>
+            </button>
+            <div
+              class="menu-list"
+              id="fieldsMenu"
+              hidden
+              style="min-width: 280px"
+            >
+              <div
+                style="
+                  padding: 9px 10px;
+                  border-bottom: 1px solid var(--border);
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  font-size: 11px;
+                  color: var(--muted);
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                <span>Show fields</span>
+                <button
+                  class="link"
+                  id="resetFields"
+                  style="color: var(--accent)"
+                >
+                  Reset
+                </button>
+              </div>
+              <div
+                id="settingsList"
+                style="max-height: 330px; overflow: auto; padding: 6px"
+              ></div>
+              <div
+                style="
+                  display: flex;
+                  gap: 6px;
+                  padding: 8px 9px;
+                  border-top: 1px solid var(--border);
+                "
+              >
+                <button class="btn small" id="checkAllFields">
+                  Select all
+                </button>
+                <button class="btn small" id="checkNoneFields">None</button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            class="btn danger ghost"
+            id="btnResetSite"
+            type="button"
+            title="Reset the entire site and clear saved browser data"
+          >
+            ⟲ Reset site
+          </button>
+
+          <input
+            type="file"
+            id="fileInput"
+            hidden
+            multiple
+            accept=".csv,.tsv,.txt,.vcf,.vcard,.xlsx,.xls,.xlsm,.xlsb,.ods,.json"
+          />
+        </div>
+      </header>
+
+      <main>
+        <aside class="sidebar">
+          <div class="search">
+            <input
+              id="search"
+              type="search"
+              placeholder="Search name, email, phone, company…"
+            />
+          </div>
+
+          <div class="new-contact-wrap">
+            <button class="btn primary" id="btnNew">＋ New contact</button>
+          </div>
+
+          <div class="selection-bar" id="selectionBar">
+            <span id="selectionCount">0 selected</span>
+            <div class="selection-actions">
+              <button class="mini-btn" id="btnBulkEdit" type="button">
+                ✎ Bulk edit
+              </button>
+              <button class="mini-btn" id="btnMergeSelected" type="button">
+                ⧉ Merge
+              </button>
+              <button
+                class="mini-btn danger"
+                id="btnDeleteSelected"
+                type="button"
+                title="Delete selected"
+              >
+                🗑
+              </button>
+              <button
+                class="mini-btn"
+                id="btnClearSelection"
+                type="button"
+                title="Clear selection"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div class="list-toolbar" id="listToolbar">
+            <label class="lt-check">
+              <input type="checkbox" id="selectAll" />
+              <span>Select all shown</span>
+            </label>
+            <span id="listHint"></span>
+          </div>
+
+          <div class="list" id="list"></div>
+          <div class="list-footer">
+            <span id="count">0 contacts</span>
+          </div>
+        </aside>
+
+        <section class="editor">
+          <div class="editor-card">
+            <div class="editor-head">
+              <div class="eh-left">
+                <span
+                  class="avatar big"
+                  id="edAvatar"
+                  style="background: #c7cbd4"
+                  >?</span
+                >
+                <div>
+                  <h2 id="edName">No contact selected</h2>
+                  <p id="edSub">
+                    Import a file or create a new contact to begin.
+                  </p>
+                </div>
+              </div>
+              <!-- Contact-level actions: Undo · Save · Delete -->
+              <div class="eh-right">
+                <button
+                  class="btn undo-contact"
+                  id="btnUndoContact"
+                  type="button"
+                  title="Undo changes to this contact"
+                >
+                  ↶ Undo
+                </button>
+                <button
+                  class="btn"
+                  id="btnSave"
+                  type="button"
+                  title="Save this contact to this browser (Ctrl/⌘ + S)"
+                >
+                  💾 Save contact
+                  <span class="save-dot" id="saveDot" hidden></span>
+                </button>
+                <button class="btn danger ghost" id="btnDelete" disabled>
+                  🗑 Delete
+                </button>
+              </div>
+            </div>
+            <form
+              class="form-grid"
+              id="contactForm"
+              data-disabled="true"
+              autocomplete="off"
+            ></form>
+          </div>
+        </section>
+
+        <aside class="right-panel">
+          <section class="right-section">
+            <div class="right-section-head">
+              <span>Filters</span>
+              <button
+                class="link"
+                id="clearRightFilters"
+                style="color: var(--accent)"
+              >
+                Clear
+              </button>
+            </div>
+            <div class="right-section-body filter-row">
+              <label class="right-filter">
+                <input type="checkbox" data-right-filter="all" checked />
+                <span>All contacts</span>
+              </label>
+              <label class="right-filter">
+                <input type="checkbox" data-right-filter="dups" />
+                <span>⚠ Duplicates</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="right-section dup-panel">
+            <div class="right-section-head">
+              <span>Duplicate groups</span>
+              <span
+                id="rightDupCount"
+                style="font-size: 11px; color: var(--danger); font-weight: 700"
+                >0</span
+              >
+            </div>
+            <div id="duplicateGroupsSide" class="right-section-body"></div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <div class="dropzone" id="dropzone"><div>Drop files to import</div></div>
+
+    <!-- Site reset modal -->
+    <div class="modal-backdrop" id="resetSiteOverlay">
+      <div
+        class="modal"
+        style="width: min(520px, 94vw)"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="modal-head">
+          <div>
+            <h3>Reset entire site?</h3>
+            <p>
+              This removes saved contacts, settings, field preferences, undo
+              data, and browser storage used by this app.
+            </p>
+          </div>
+          <button class="icon-btn" id="closeResetSite" type="button">×</button>
+        </div>
+        <div style="padding: 16px">
+          <div
+            style="
+              padding: 12px;
+              border: 1px solid var(--danger);
+              background: #fff5f5;
+              border-radius: 10px;
+              color: var(--danger);
+              font-size: 13px;
+              line-height: 1.5;
+            "
+          >
+            <strong>This cannot be undone.</strong><br />
+            Export your contacts first if you want to keep a backup.
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn" id="cancelResetSite" type="button">Cancel</button>
+          <button class="btn danger" id="confirmResetSite" type="button">
+            Reset site
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Excel-style bulk edit modal -->
+    <div class="modal-backdrop" id="bulkOverlay">
+      <div
+        class="modal bulk-sheet-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bulkTitle"
+      >
+        <div class="bulk-sheet-head">
+          <div class="bulk-sheet-title">
+            <h3 id="bulkTitle">Bulk edit</h3>
+            <p id="bulkSubtitle">
+              Edit multiple contacts in a spreadsheet-style view.
+            </p>
+          </div>
+          <div class="bulk-sheet-actions">
+            <button class="btn small" id="closeBulkEdit" type="button">
+              ✕ Close
+            </button>
+          </div>
+        </div>
+
+        <div class="bulk-sheet-toolbar">
+          <select
+            id="bulkScope"
+            class="bulk-scope"
+            aria-label="Bulk edit scope"
+          ></select>
+          <button class="btn small" id="sheetSelectAll" type="button">
+            Select all
+          </button>
+          <button class="btn small" id="sheetFillDown" type="button">
+            ↓ Fill down
+          </button>
+          <button class="btn small" id="sheetClearCell" type="button">
+            ⌫ Clear cell
+          </button>
+          <button class="btn small" id="sheetReset" type="button">
+            ↶ Reset
+          </button>
+          <span class="sheet-info" id="sheetInfo"></span>
+        </div>
+
+        <div class="sheet-wrap" id="bulkSheetWrap">
+          <table class="bulk-sheet" id="bulkSheet">
+            <thead id="bulkSheetHead"></thead>
+            <tbody id="bulkSheetBody"></tbody>
+          </table>
+        </div>
+
+        <div class="sheet-footer">
+          <span class="sheet-hint">
+            Excel-style: click a cell to edit · Tab/Enter moves · Ctrl/Cmd+C/V
+            works with cells · Fill down copies the active cell
+          </span>
+          <div class="sheet-footer-actions">
+            <button class="btn" id="cancelBulkEdit" type="button">
+              Cancel
+            </button>
+            <button class="btn primary" id="applyBulkEdit" type="button">
+              Save changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      /* =========================================================
+         Constants
+         ========================================================= */
+      const FIELDS = [
+        { key: "firstName", label: "First name", type: "text" },
+        { key: "middleName", label: "Middle name", type: "text" },
+        { key: "lastName", label: "Last name", type: "text" },
+        { key: "email", label: "Email", type: "email" },
+        { key: "company", label: "Company", type: "text" },
+        { key: "jobTitle", label: "Job title", type: "text" },
+        { key: "website", label: "Website", type: "url" },
+        { key: "birthday", label: "Birthday", type: "text" },
+        { key: "nickname", label: "Nickname", type: "text" },
+        { key: "address", label: "Address", type: "text", wide: true },
+        { key: "city", label: "City", type: "text" },
+        { key: "state", label: "State / Province", type: "text" },
+        { key: "zip", label: "ZIP / Postal code", type: "text" },
+        { key: "country", label: "Country", type: "text" },
+        { key: "tags", label: "Tags", type: "text" },
+        { key: "notes", label: "Notes", type: "textarea", wide: true },
+      ];
+      const PHONES_KEY = "phones";
+      const PHONES_AFTER = "lastName";
+      const DEFAULT_VISIBLE = ["firstName", "lastName", PHONES_KEY, "company"];
+      const PHONE_LABELS = [
+        "mobile",
+        "home",
+        "work",
+        "main",
+        "office",
+        "fax",
+        "whatsapp",
+        "other",
+      ];
+      const visibleFields = new Set(DEFAULT_VISIBLE);
+      const STORAGE_KEY = "contact-editor:v2";
+
+      const ALIASES = {
+        firstName: [
+          "first name",
+          "firstname",
+          "given name",
+          "givenname",
+          "given",
+          "fname",
+          "first",
+          "forename",
+        ],
+        middleName: [
+          "middle name",
+          "middlename",
+          "middle",
+          "mname",
+          "middle initial",
+          "additional name",
+        ],
+        lastName: [
+          "last name",
+          "lastname",
+          "family name",
+          "familyname",
+          "surname",
+          "lname",
+          "last",
+        ],
+        nickname: [
+          "nickname",
+          "nick name",
+          "alias",
+          "also known as",
+          "aka",
+          "display name",
+        ],
+        email: [
+          "email",
+          "e-mail",
+          "e mail",
+          "email address",
+          "emailaddress",
+          "mail",
+          "primary email",
+          "work email",
+          // Google Contacts
+          "e-mail 1 - value",
+          "email 1 - value",
+          "e-mail 2 - value",
+          "email 2 - value",
+          "e-mail 3 - value",
+          "email 3 - value",
+          "e-mail 1",
+          "email 1",
+          "e-mail 2",
+          "email 2",
+          "e-mail",
+          "email address 1",
+        ],
+        phone: [
+          "phone",
+          "telephone",
+          "tel",
+          "mobile",
+          "cell",
+          "cell phone",
+          "cellphone",
+          "phone number",
+          "phonenumber",
+          "phone numbers",
+          "phonenumbers",
+          "mobile phone",
+          "work phone",
+          "home phone",
+          // Google Contacts
+          "phone 1 - value",
+          "phone 2 - value",
+          "phone 3 - value",
+          "phone 1",
+          "phone 2",
+          "phone 3",
+          "phone number 1",
+          "mobile 1",
+        ],
+        company: [
+          "company",
+          "organization",
+          "organisation",
+          "org",
+          "employer",
+          "business",
+          "company name",
+          // Google Contacts
+          "organization name",
+          "organizationname",
+          "org name",
+        ],
+        jobTitle: [
+          "job title",
+          "jobtitle",
+          "title",
+          "position",
+          "role",
+          "designation",
+          "job",
+          "occupation",
+          // Google Contacts
+          "organization title",
+          "organizationtitle",
+          "org title",
+          "organization department",
+          "organizationdepartment",
+          "department",
+        ],
+        address: [
+          "address",
+          "street",
+          "street address",
+          "address1",
+          "address 1",
+          "address line 1",
+          "addr",
+        ],
+        city: ["city", "town", "locality"],
+        state: ["state", "province", "region", "county"],
+        zip: [
+          "zip",
+          "zip code",
+          "zipcode",
+          "postal code",
+          "postalcode",
+          "postcode",
+        ],
+        country: ["country", "nation"],
+        website: [
+          "website",
+          "url",
+          "web",
+          "homepage",
+          "site",
+          "web site",
+          "webpage",
+        ],
+        birthday: [
+          "birthday",
+          "birth date",
+          "birthdate",
+          "dob",
+          "date of birth",
+          "bday",
+        ],
+        tags: [
+          "tags",
+          "tag",
+          "categories",
+          "category",
+          "labels",
+          "label",
+          "groups",
+          "group",
+        ],
+        notes: [
+          "notes",
+          "note",
+          "comment",
+          "comments",
+          "description",
+          "memo",
+          "remarks",
+        ],
+        __fullname: [
+          "name",
+          "full name",
+          "fullname",
+          "display name",
+          "displayname",
+          "contact name",
+          "contactname",
+        ],
+      };
+      const normKey = (s) =>
+        String(s)
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
+      const aliasMap = (() => {
+        const m = {};
+        FIELDS.forEach((f) => {
+          m[normKey(f.key)] = f.key;
+          m[normKey(f.label)] = f.key;
+        });
+        Object.entries(ALIASES).forEach(([k, arr]) =>
+          arr.forEach((a) => (m[normKey(a)] = k)),
+        );
+        return m;
+      })();
+      const uid = () =>
+        "c_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+      /* =========================================================
+         State
+         ========================================================= */
+      const state = {
+        contacts: [],
+        selectedId: null,
+        query: "",
+        filter: "all",
+        dupIds: new Set(),
+        selectedDupGroupKey: null,
+        selectedDupGroupSnapshot: null,
+        checked: new Set(),
+      };
+
+      const $ = (s) => document.querySelector(s);
+      const listEl = $("#list"),
+        formEl = $("#contactForm"),
+        countEl = $("#count"),
+        toastEl = $("#toast"),
+        dropzoneEl = $("#dropzone"),
+        fileInput = $("#fileInput"),
+        settingsListEl = $("#settingsList");
+      const duplicateGroupsSide = $("#duplicateGroupsSide");
+
+      /* =========================================================
+         Helpers
+         ========================================================= */
+      function blankContact() {
+        const c = { id: uid(), phones: [{ label: "", number: "" }] };
+        FIELDS.forEach((f) => (c[f.key] = ""));
+        return c;
+      }
+      function escapeHtml(s) {
+        return String(s ?? "").replace(
+          /[&<>"']/g,
+          (m) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[m],
+        );
+      }
+      function displayName(c) {
+        const n = [c.firstName, c.lastName].filter(Boolean).join(" ").trim();
+        return n || c.company || c.email || "Unnamed contact";
+      }
+      function initials(c) {
+        const f = (c.firstName || "").trim(),
+          l = (c.lastName || "").trim();
+        if (f || l) return ((f[0] || "") + (l[0] || "")).toUpperCase();
+        const e = (c.email || "").trim();
+        return e ? e[0].toUpperCase() : "?";
+      }
+      function avatarColor(c) {
+        const s = displayName(c) || c.id || "?";
+        let h = 0;
+        for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+        return `hsl(${h} 58% 46%)`;
+      }
+      const digitsOnly = (s) => String(s || "").replace(/\D/g, "");
+      function primaryPhone(c) {
+        const p = (c.phones || []).find(
+          (x) => x && String(x.number || "").trim(),
+        );
+        return p ? p.number.trim() : "";
+      }
+      function hasAnyPhone(c) {
+        return (c.phones || []).some((p) => p && String(p.number || "").trim());
+      }
+      function hasEmail(c) {
+        return !!String(c.email || "").trim();
+      }
+      function hasCompany(c) {
+        return !!String(c.company || "").trim();
+      }
+      function hasName(c) {
+        return !!((c.firstName || "").trim() || (c.lastName || "").trim());
+      }
+      function isEmptyContact(c) {
+        return (
+          !FIELDS.some((f) => String(c[f.key] || "").trim()) && !hasAnyPhone(c)
+        );
+      }
+      function haystack(c) {
+        return (
+          FIELDS.map((f) => c[f.key]).join(" ") +
+          " " +
+          (c.phones || [])
+            .map((p) => `${p.label || ""} ${p.number || ""}`)
+            .join(" ")
+        );
+      }
+      function formatPhones(c) {
+        return (c.phones || [])
+          .filter((p) => p && String(p.number || "").trim())
+          .map((p) =>
+            p.label ? `${p.label}: ${p.number.trim()}` : p.number.trim(),
+          )
+          .join("; ");
+      }
+      function expandScientificNumber(value) {
+        const input = String(value ?? "").trim();
+        if (!/^[+-]?\d+(?:\.\d+)?[eE][+-]?\d+$/.test(input)) return input;
+        const m = input.match(/^([+-]?)(\d+)(?:\.(\d+))?[eE]([+-]?\d+)$/);
+        if (!m) return input;
+        const sign = m[1] || "",
+          integer = m[2],
+          fraction = m[3] || "",
+          exponent = Number(m[4]);
+        const digits = integer + fraction;
+        const decimalPos = integer.length + exponent;
+        let result;
+        if (decimalPos <= 0) result = "0." + "0".repeat(-decimalPos) + digits;
+        else if (decimalPos >= digits.length)
+          result = digits + "0".repeat(decimalPos - digits.length);
+        else
+          result = digits.slice(0, decimalPos) + "." + digits.slice(decimalPos);
+        result = result.replace(/\.0+$/, "");
+        return sign + result;
+      }
+      function normalizeImportedPhone(value) {
+        let s = String(value ?? "").trim();
+        if (!s) return "";
+        s = expandScientificNumber(s);
+        s = s.replace(/^(\+?\d+)\.0+$/, "$1");
+        return s;
+      }
+      function formatIndianPhone(value) {
+        const raw = String(value ?? "").trim();
+        if (!raw) return "";
+        let digits = raw.replace(/\D/g, "");
+        if (digits.startsWith("0091")) digits = digits.slice(4);
+        else if (digits.startsWith("91") && digits.length > 10)
+          digits = digits.slice(2);
+        digits = digits.slice(0, 10);
+        if (!digits) return "+91 ";
+        let formatted = `+91 ${digits.slice(0, 5)}`;
+        if (digits.length > 5) formatted += ` ${digits.slice(5)}`;
+        return formatted;
+      }
+      function parsePhoneString(str) {
+        return String(str)
+          .split(/[;,\/\n]/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((part) => {
+            const m = part.match(
+              /^([A-Za-z][A-Za-z0-9 _+\-]{0,24}?)\s*:\s*(.+)$/,
+            );
+            if (m)
+              return {
+                label: m[1].trim().toLowerCase(),
+                number: normalizeImportedPhone(m[2]),
+              };
+            return { label: "", number: normalizeImportedPhone(part) };
+          });
+      }
+      function scoreContact(c) {
+        let s = 0;
+        FIELDS.forEach((f) => {
+          if (String(c[f.key] || "").trim()) s++;
+        });
+        s +=
+          (c.phones || []).filter((p) => p && String(p.number || "").trim())
+            .length * 2;
+        return s;
+      }
+      let toastTimer;
+      function toast(msg, type = "info") {
+        toastEl.textContent = msg;
+        toastEl.className = "toast show " + type;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => (toastEl.className = "toast"), 3400);
+      }
+      function download(filename, blob) {
+        const url = URL.createObjectURL(blob),
+          a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }
+      const stamp = () => new Date().toISOString().slice(0, 10);
+
+      /* =========================================================
+         Modal open/close helpers (uses .show class)
+         ========================================================= */
+      function openModal(el) {
+        if (el) el.classList.add("show");
+      }
+      function closeModal(el) {
+        if (el) el.classList.remove("show");
+      }
+
+      /* =========================================================
+         Dirty state / persistence
+         ========================================================= */
+      let dirty = false;
+      function setDirty(v) {
+        dirty = !!v;
+        const btn = $("#btnSave"),
+          dot = $("#saveDot");
+        if (!btn || !dot) return;
+        btn.classList.toggle("dirty", dirty);
+        dot.hidden = !dirty;
+        btn.title = dirty
+          ? "Unsaved changes — click to save this contact (Ctrl/⌘ + S)"
+          : "Save this contact to this browser (Ctrl/⌘ + S)";
+      }
+      function markDirty() {
+        if (!dirty) setDirty(true);
+        scheduleAutoSave();
+      }
+      let autoSaveTimer;
+      function scheduleAutoSave() {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(() => saveToStorage(true), 250);
+      }
+      function saveToStorage(silent = false, contactOverride = null) {
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              version: 2,
+              savedAt: new Date().toISOString(),
+              contacts: state.contacts,
+            }),
+          );
+          setDirty(false);
+          const btn = $("#btnSave");
+          if (btn) {
+            btn.classList.add("just-saved");
+            setTimeout(() => btn.classList.remove("just-saved"), 900);
+          }
+          if (!silent) {
+            const c = contactOverride || getSelected();
+            if (c) {
+              toast(`Saved contact “${displayName(c)}”`, "success");
+            } else {
+              toast(
+                `Saved ${state.contacts.length} contact${state.contacts.length === 1 ? "" : "s"}`,
+                "success",
+              );
+            }
+          }
+          return true;
+        } catch (e) {
+          console.error(e);
+          if (!silent) toast("Could not save: " + e.message, "error");
+          return false;
+        }
+      }
+      function loadFromStorage() {
+        try {
+          const raw =
+            localStorage.getItem(STORAGE_KEY) ||
+            localStorage.getItem("contact-editor:v1");
+          if (!raw) return false;
+          const data = JSON.parse(raw);
+          if (!data || !Array.isArray(data.contacts)) return false;
+          state.contacts = data.contacts.map((c) => {
+            const base = blankContact();
+            base.id = c.id || uid();
+            FIELDS.forEach((f) => (base[f.key] = String(c[f.key] ?? "")));
+            base.phones =
+              Array.isArray(c.phones) && c.phones.length
+                ? c.phones.map((p) => ({
+                    label: String(p?.label ?? ""),
+                    number: String(p?.number ?? ""),
+                  }))
+                : [{ label: "", number: "" }];
+            return base;
+          });
+          return true;
+        } catch (e) {
+          console.error(e);
+          return false;
+        }
+      }
+
+      async function resetEntireSite() {
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+          if ("caches" in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((key) => caches.delete(key)));
+          }
+          if ("serviceWorker" in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map((reg) => reg.unregister()));
+          }
+        } catch (e) {
+          console.error("Site reset cleanup failed:", e);
+        }
+        window.location.reload();
+      }
+
+      /* =========================================================
+         Reset-site modal wiring
+         ========================================================= */
+      const resetSiteOverlay = $("#resetSiteOverlay");
+      $("#btnResetSite").addEventListener("click", () =>
+        openModal(resetSiteOverlay),
+      );
+      $("#closeResetSite").addEventListener("click", () =>
+        closeModal(resetSiteOverlay),
+      );
+      $("#cancelResetSite").addEventListener("click", () =>
+        closeModal(resetSiteOverlay),
+      );
+      resetSiteOverlay.addEventListener("click", (e) => {
+        if (e.target === resetSiteOverlay) closeModal(resetSiteOverlay);
+      });
+      $("#confirmResetSite").addEventListener("click", resetEntireSite);
+
+      /* =========================================================
+         Save (contact-level)
+         ========================================================= */
+      $("#btnSave").addEventListener("click", () => {
+        const c = getSelected();
+        if (!c) {
+          toast("Select a contact first", "warn");
+          return;
+        }
+        saveToStorage(false, c);
+      });
+
+      /* =========================================================
+         Keyboard shortcuts
+         ========================================================= */
+      document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+          e.preventDefault();
+          const c = getSelected();
+          if (c) saveToStorage(false, c);
+        } else if (
+          e.key === "/" &&
+          !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)
+        ) {
+          e.preventDefault();
+          $("#search").focus();
+        } else if (e.key === "Escape") {
+          closeMenus();
+          closeBulkEdit();
+          closeModal(resetSiteOverlay);
+        }
+      });
+      window.addEventListener("beforeunload", () => {
+        clearTimeout(autoSaveTimer);
+        if (dirty) saveToStorage(true);
+      });
+
+      /* =========================================================
+         Import parsers
+         ========================================================= */
+      function recordToContact(rec) {
+        const c = blankContact();
+        c.phones = [];
+        let fullName = "";
+        const phoneStrings = [];
+        const emailStrings = [];
+
+        /* ---- Pre-scan: Google Contacts "Phone N - Label" / "E-mail N - Label" ---- */
+        const phoneLabels = {};
+        const emailLabels = {};
+        for (const [key, val] of Object.entries(rec)) {
+          const pm = key.match(/^Phone\s*(\d+)?\s*-\s*Label$/i);
+          if (pm) {
+            phoneLabels[pm[1] || "1"] = String(val || "").trim();
+            continue;
+          }
+          const em = key.match(/^(?:E-?mail|Email)\s*(\d+)?\s*-\s*Label$/i);
+          if (em) {
+            emailLabels[em[1] || "1"] = String(val || "").trim();
+          }
+        }
+
+        /* ---- Main pass ---- */
+        for (const [rawKey, rawVal] of Object.entries(rec)) {
+          // Skip "… - Label" columns (already captured above)
+          if (/\s*-\s*Label$/i.test(rawKey)) continue;
+
+          // Google Contacts "Phone N - Value"
+          const pm = rawKey.match(/^Phone\s*(\d+)?\s*-\s*Value$/i);
+          if (pm) {
+            const label = phoneLabels[pm[1] || "1"] || "";
+            const raw = String(rawVal || "").trim();
+            if (!raw) continue;
+            raw
+              .split(/\s*\/\s*/)
+              .map((s) => s.trim())
+              .filter(Boolean)
+              .forEach((num) => {
+                phoneStrings.push(label ? `${label}: ${num}` : num);
+              });
+            continue;
+          }
+
+          // Google Contacts "E-mail N - Value"
+          const em = rawKey.match(/^(?:E-?mail|Email)\s*(\d+)?\s*-\s*Value$/i);
+          if (em) {
+            const raw = String(rawVal || "").trim();
+            if (raw) emailStrings.push(raw);
+            continue;
+          }
+
+          // Normal field lookup
+          const val = rawVal == null ? "" : String(rawVal).trim();
+          if (!val) continue;
+          const normalizedRaw = normKey(rawKey);
+          const canonical = FIELDS.find(
+            (f) => normKey(f.key) === normalizedRaw,
+          );
+          const key =
+            rawKey === "__fullname" || rawKey === "phone"
+              ? rawKey
+              : canonical?.key || aliasMap[normalizedRaw];
+          if (!key) continue;
+
+          if (key === "__fullname") {
+            if (!fullName) fullName = val;
+            continue;
+          }
+          if (key === "phone") {
+            phoneStrings.push(val);
+            continue;
+          }
+          if (key === "email") {
+            emailStrings.push(val);
+            continue;
+          }
+          if (!c[key]) c[key] = val;
+        }
+
+        /* ---- Emails ---- */
+        if (emailStrings.length) c.email = emailStrings.join(", ");
+
+        /* ---- Explicit phones array (JSON / vCard) ---- */
+        if (Array.isArray(rec.phones))
+          rec.phones.forEach((p) => {
+            if (p == null) return;
+            if (typeof p === "object") {
+              if (String(p.number || "").trim())
+                c.phones.push({
+                  label: String(p.label || ""),
+                  number: String(p.number).trim(),
+                });
+            } else parsePhoneString(p).forEach((x) => c.phones.push(x));
+          });
+
+        /* ---- Parse phone strings ---- */
+        phoneStrings.forEach((s) =>
+          parsePhoneString(s).forEach((x) => c.phones.push(x)),
+        );
+
+        c.phones = c.phones.filter((p) => String(p.number || "").trim());
+        if (!c.phones.length) c.phones = [{ label: "", number: "" }];
+
+        /* ---- Split full name if needed ---- */
+        if (!c.firstName && !c.lastName && fullName) {
+          const parts = fullName.split(/\s+/).filter(Boolean);
+          c.firstName = parts.shift() || "";
+          c.lastName = parts.join(" ");
+        }
+
+        return c;
+      }
+
+      function detectDelimiter(text) {
+        const line = text.split(/\r?\n/).find((l) => l.trim()) || "",
+          counts = { ",": 0, ";": 0, "\t": 0, "|": 0 };
+        let q = false;
+        for (const ch of line) {
+          if (ch === '"') q = !q;
+          else if (!q && ch in counts) counts[ch]++;
+        }
+        return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+      }
+      function parseDelimited(text, delimiter) {
+        text = text.replace(/^\uFEFF/, "");
+        const d = delimiter || detectDelimiter(text),
+          rows = [];
+        let row = [],
+          field = "",
+          q = false;
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
+          if (q) {
+            if (ch === '"') {
+              if (text[i + 1] === '"') {
+                field += '"';
+                i++;
+              } else q = false;
+            } else field += ch;
+          } else {
+            if (ch === '"') q = true;
+            else if (ch === d) {
+              row.push(field);
+              field = "";
+            } else if (ch === "\n") {
+              row.push(field);
+              rows.push(row);
+              row = [];
+              field = "";
+            } else if (ch !== "\r") field += ch;
+          }
+        }
+        if (field !== "" || row.length) {
+          row.push(field);
+          rows.push(row);
+        }
+        return rows.filter((r) => r.some((x) => String(x).trim() !== ""));
+      }
+      function parseTabularRows(text, delimiter) {
+        const rows = parseDelimited(text, delimiter);
+        if (rows.length < 2) return { headers: [], rows: [] };
+        const headers = rows[0].map((h) => String(h).trim());
+        return {
+          headers,
+          rows: rows.slice(1).map((r) => {
+            const rec = {};
+            headers.forEach((h, i) => {
+              if (h) rec[h] = r[i] ?? "";
+            });
+            return rec;
+          }),
+        };
+      }
+      function parseJSONText(text) {
+        const data = JSON.parse(text),
+          arr = Array.isArray(data)
+            ? data
+            : Array.isArray(data.contacts)
+              ? data.contacts
+              : Array.isArray(data.items)
+                ? data.items
+                : [data];
+        return arr
+          .filter((o) => o && typeof o === "object")
+          .map(recordToContact)
+          .filter((c) => !isEmptyContact(c));
+      }
+      function unescapeVCard(v) {
+        return String(v || "")
+          .replace(/\\n/gi, "\n")
+          .replace(/\\,/g, ",")
+          .replace(/\\;/g, ";")
+          .replace(/\\\\/g, "\\");
+      }
+      function splitVCardLine(line) {
+        let q = false;
+        for (let i = 0; i < line.length; i++) {
+          if (line[i] === '"') q = !q;
+          else if (line[i] === ":" && !q)
+            return [line.slice(0, i), line.slice(i + 1)];
+        }
+        return [line, ""];
+      }
+      function parseVCard(text) {
+        const raw = text
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .split("\n"),
+          lines = [];
+        for (const line of raw) {
+          if (/^[ \t]/.test(line) && lines.length)
+            lines[lines.length - 1] += line.slice(1);
+          else lines.push(line);
+        }
+        const cards = [];
+        let current = null;
+        for (const line of lines) {
+          const u = line.toUpperCase();
+          if (u.startsWith("BEGIN:VCARD")) {
+            current = [];
+            continue;
+          }
+          if (u.startsWith("END:VCARD")) {
+            if (current) cards.push(current);
+            current = null;
+            continue;
+          }
+          if (current) current.push(line);
+        }
+        return cards
+          .map((cardLines) => {
+            const rec = {},
+              emails = [],
+              tels = [];
+            for (const line of cardLines) {
+              if (!line.trim()) continue;
+              const [rawName, rawValue] = splitVCardLine(line);
+              if (!rawName) continue;
+              const prop = rawName.split(";")[0].split(".").pop().toUpperCase(),
+                value = unescapeVCard(rawValue);
+              switch (prop) {
+                case "N": {
+                  const p = rawValue.split(";");
+                  rec.lastName = unescapeVCard(p[0] || "");
+                  rec.firstName = unescapeVCard(p[1] || "");
+                  break;
+                }
+                case "FN":
+                  rec.__fullname = value;
+                  break;
+                case "ORG":
+                  rec.company = unescapeVCard(rawValue.split(";")[0] || "");
+                  break;
+                case "TITLE":
+                  rec.jobTitle = value;
+                  break;
+                case "EMAIL":
+                  emails.push(value);
+                  break;
+                case "TEL": {
+                  const tm = rawName.match(/TYPE=([^;:]+)/i);
+                  let label = tm ? tm[1].toLowerCase() : "";
+                  if (label === "cell" || label === "cellular")
+                    label = "mobile";
+                  if (label === "voice") label = "main";
+                  tels.push({ label, number: value });
+                  break;
+                }
+                case "URL":
+                  if (!rec.website) rec.website = value;
+                  break;
+                case "BDAY":
+                  rec.birthday = value;
+                  break;
+                case "NOTE":
+                  rec.notes = value;
+                  break;
+                case "CATEGORIES":
+                  rec.tags = value;
+                  break;
+                case "ADR": {
+                  const p = rawValue.split(";").map(unescapeVCard);
+                  rec.address = p[2] || "";
+                  rec.city = p[3] || "";
+                  rec.state = p[4] || "";
+                  rec.zip = p[5] || "";
+                  rec.country = p[6] || "";
+                  break;
+                }
+              }
+            }
+            if (emails.length) rec.email = emails.join(", ");
+            if (tels.length) rec.phones = tels;
+            return recordToContact(rec);
+          })
+          .filter((c) => !isEmptyContact(c));
+      }
+      function excelValueToString(value) {
+        if (value === null || value === undefined) return "";
+        if (typeof value === "string") return value.trim();
+        if (typeof value === "number") {
+          if (!Number.isFinite(value)) return "";
+          return Number.isInteger(value) ? String(value) : String(value);
+        }
+        return String(value).trim();
+      }
+      function parseWorkbookRows(buffer) {
+        if (typeof XLSX === "undefined")
+          throw new Error("Spreadsheet library not loaded.");
+        const wb = XLSX.read(buffer, {
+          type: "array",
+          cellDates: true,
+          raw: true,
+        });
+        const sheets = [];
+        for (const name of wb.SheetNames) {
+          const ws = wb.Sheets[name];
+          const rows = XLSX.utils.sheet_to_json(ws, {
+            header: 1,
+            defval: "",
+            raw: true,
+          });
+          if (!rows.length) continue;
+          const headers = rows[0].map((v) => excelValueToString(v));
+          const records = rows
+            .slice(1)
+            .map((r) => {
+              const rec = {};
+              headers.forEach((h, i) => {
+                if (h) rec[h] = excelValueToString(r[i]);
+              });
+              return rec;
+            })
+            .filter((r) => Object.values(r).some((v) => String(v).trim()));
+          if (records.length) sheets.push({ name, headers, rows: records });
+        }
+        return sheets;
+      }
+
+      function autoMapHeader(header) {
+        const n = normKey(header);
+        if (aliasMap[n]) return aliasMap[n];
+        const lower = String(header).toLowerCase().trim();
+        if (/(^|[\s_-])(full[\s_-]?name|name)([\s_-]|$)/.test(lower))
+          return "__fullname";
+        if (/phone|mobile|tel|contact[\s_-]?no|number/.test(lower))
+          return "phone";
+        for (const f of FIELDS) if (normKey(f.label) === n) return f.key;
+        return "";
+      }
+      function applyMappingToRows(rows, headers, mapping) {
+        return rows
+          .map((source) => {
+            const rec = {};
+            headers.forEach((header, i) => {
+              const key = mapping[i];
+              if (!key) return;
+              rec[key] = String(source[header] ?? "").trim();
+            });
+            return recordToContact(rec);
+          })
+          .filter((c) => !isEmptyContact(c));
+      }
+      async function getTabularImportData(file) {
+        const ext = (file.name.split(".").pop() || "").toLowerCase();
+        if (["xlsx", "xls", "xlsm", "xlsb", "ods", "fods"].includes(ext)) {
+          return parseWorkbookRows(await file.arrayBuffer());
+        }
+        const raw = await file.text();
+        if (
+          ["csv", "tsv", "txt"].includes(ext) ||
+          /[,;\t|]/.test(raw.split("\n")[0] || "")
+        ) {
+          const delimiter = ext === "tsv" ? "\t" : undefined;
+          const parsed = parseTabularRows(raw, delimiter);
+          return parsed.headers.length
+            ? [{ name: "", headers: parsed.headers, rows: parsed.rows }]
+            : [];
+        }
+        return null;
+      }
+      async function parseFile(file) {
+        const ext = (file.name.split(".").pop() || "").toLowerCase();
+        const tabular = await getTabularImportData(file);
+        if (tabular) {
+          const all = [];
+          for (const sheet of tabular) {
+            const mapping = sheet.headers.map(autoMapHeader);
+            all.push(...applyMappingToRows(sheet.rows, sheet.headers, mapping));
+          }
+          return all;
+        }
+        const raw = await file.text();
+        if (ext === "json" || /^\s*[\[{]/.test(raw.slice(0, 200)))
+          return parseJSONText(raw);
+        if (
+          ext === "vcf" ||
+          ext === "vcard" ||
+          /BEGIN:VCARD/i.test(raw.slice(0, 800))
+        )
+          return parseVCard(raw);
+        throw new Error("Unsupported file format");
+      }
+      async function importFiles(files) {
+        let added = 0,
+          failed = 0;
+        for (const file of files) {
+          try {
+            const contacts = await parseFile(file);
+            if (!contacts.length) {
+              toast(`No contacts found in “${file.name}”`, "warn");
+              continue;
+            }
+            contacts.forEach((c) => {
+              c.id = uid();
+              state.contacts.push(c);
+            });
+            added += contacts.length;
+          } catch (err) {
+            console.error(err);
+            failed++;
+            toast(`Could not read “${file.name}”: ${err.message}`, "error");
+          }
+        }
+        if (added) {
+          markDirty();
+          refreshDuplicateIndex();
+          renderList();
+          if (!state.selectedId) selectContact(state.contacts[0].id);
+          toast(
+            `Imported ${added} contact${added === 1 ? "" : "s"}${failed ? ` · ${failed} file(s) failed` : ""}`,
+            "success",
+          );
+        }
+      }
+
+      /* =========================================================
+         Duplicate detection
+         ========================================================= */
+      function findDuplicateGroups() {
+        const contacts = state.contacts;
+        if (contacts.length < 2) return [];
+        const parent = new Map();
+        contacts.forEach((c) => parent.set(c.id, c.id));
+        const find = (id) => {
+          while (parent.get(id) !== id) {
+            parent.set(id, parent.get(parent.get(id)));
+            id = parent.get(id);
+          }
+          return id;
+        };
+        const union = (a, b) => {
+          const ra = find(a),
+            rb = find(b);
+          if (ra !== rb) parent.set(ra, rb);
+        };
+        const emailIdx = new Map(),
+          phoneIdx = new Map(),
+          nameIdx = new Map(),
+          matchType = new Map();
+        const tag = (id, r) => {
+          if (!matchType.has(id)) matchType.set(id, new Set());
+          matchType.get(id).add(r);
+        };
+        contacts.forEach((c) => {
+          const email = String(c.email || "")
+            .trim()
+            .toLowerCase();
+          if (email) {
+            if (emailIdx.has(email)) {
+              union(c.id, emailIdx.get(email));
+              tag(c.id, "email");
+              tag(emailIdx.get(email), "email");
+            } else emailIdx.set(email, c.id);
+          }
+          const seen = new Set();
+          (c.phones || []).forEach((p) => {
+            const d = digitsOnly(p.number);
+            if (d.length >= 7 && !seen.has(d)) {
+              seen.add(d);
+              if (phoneIdx.has(d)) {
+                union(c.id, phoneIdx.get(d));
+                tag(c.id, "phone");
+                tag(phoneIdx.get(d), "phone");
+              } else phoneIdx.set(d, c.id);
+            }
+          });
+          const first = String(c.firstName || "")
+              .trim()
+              .toLowerCase(),
+            last = String(c.lastName || "")
+              .trim()
+              .toLowerCase();
+          if (first || last) {
+            const key = first + "|" + last;
+            if (nameIdx.has(key)) {
+              union(c.id, nameIdx.get(key));
+              tag(c.id, "name");
+              tag(nameIdx.get(key), "name");
+            } else nameIdx.set(key, c.id);
+          }
+        });
+        const buckets = new Map();
+        contacts.forEach((c) => {
+          const root = find(c.id);
+          if (!buckets.has(root)) buckets.set(root, []);
+          buckets.get(root).push(c);
+        });
+        const groups = [];
+        for (const list of buckets.values())
+          if (list.length >= 2) {
+            const reasons = new Set();
+            list.forEach((c) =>
+              (matchType.get(c.id) || []).forEach((r) => reasons.add(r)),
+            );
+            groups.push({ contacts: list, reasons });
+          }
+        groups.sort(
+          (a, b) =>
+            b.contacts.length - a.contacts.length ||
+            displayName(a.contacts[0]).localeCompare(
+              displayName(b.contacts[0]),
+            ),
+        );
+        return groups;
+      }
+      const REASON_LABEL = { name: "Name", email: "Email", phone: "Phone" };
+      function duplicateGroupKey(group) {
+        return (group?.contacts || [])
+          .map((c) => c.id)
+          .sort()
+          .join("|");
+      }
+      function selectedSnapshotGroup() {
+        const snap = state.selectedDupGroupSnapshot;
+        if (!snap) return null;
+        const contacts = snap.ids
+          .map((id) => state.contacts.find((c) => c.id === id))
+          .filter(Boolean);
+        return contacts.length
+          ? { contacts, reasons: new Set(snap.reasons || []), key: snap.key }
+          : null;
+      }
+      function snapshotDuplicateGroup(group) {
+        state.selectedDupGroupKey = duplicateGroupKey(group);
+        state.selectedDupGroupSnapshot = {
+          key: state.selectedDupGroupKey,
+          ids: group.contacts.map((c) => c.id),
+          reasons: [...group.reasons],
+        };
+      }
+      function clearSelectedDuplicateGroup() {
+        state.selectedDupGroupKey = null;
+        state.selectedDupGroupSnapshot = null;
+      }
+      function refreshDuplicateIndex() {
+        const groups = findDuplicateGroups();
+        state.dupIds = new Set();
+        groups.forEach((g) =>
+          g.contacts.forEach((c) => state.dupIds.add(c.id)),
+        );
+        $("#rightDupCount").textContent = groups.length;
+        renderDuplicateGroupsSide();
+        updateSelectionBar();
+        return groups;
+      }
+      function renderDuplicateGroupsSide() {
+        const wrap = duplicateGroupsSide,
+          groups = findDuplicateGroups();
+        wrap.innerHTML = "";
+        $("#rightDupCount").textContent = groups.length;
+        const selected = selectedSnapshotGroup();
+        if (selected) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "dup-group-item active";
+          const f = selected.contacts[0];
+          b.innerHTML = `<div class="dup-group-title"><span style="color:var(--danger)">⚠</span><strong>${escapeHtml(displayName(f))}</strong><span class="dup-group-count">${selected.contacts.length}</span></div><div class="dup-group-meta">${escapeHtml(selected.contacts.map((c) => displayName(c)).join(" · "))}</div><div class="dup-group-reasons"><span class="dup-reason">Selected</span><span class="dup-reason">Double-click to edit</span></div>`;
+          b.addEventListener("click", () => {
+            state.checked = new Set(selected.contacts.map((c) => c.id));
+            updateSelectionBar();
+            renderList();
+          });
+          wrap.appendChild(b);
+        }
+        groups
+          .filter(
+            (g) =>
+              !selected || duplicateGroupKey(g) !== state.selectedDupGroupKey,
+          )
+          .forEach((group) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "dup-group-item";
+            b.innerHTML = `<div class="dup-group-title"><span style="color:var(--danger)">⚠</span><strong>${escapeHtml(displayName(group.contacts[0]))}</strong><span class="dup-group-count">${group.contacts.length}</span></div><div class="dup-group-meta">${escapeHtml(group.contacts.map((c) => displayName(c)).join(" · "))}</div><div class="dup-group-reasons">${[...group.reasons].map((r) => `<span class="dup-reason">${escapeHtml(REASON_LABEL[r] || r)}</span>`).join("")}</div>`;
+            b.addEventListener("click", () => {
+              snapshotDuplicateGroup(group);
+              state.checked = new Set(group.contacts.map((c) => c.id));
+              state.filter = "dups";
+              state.query = "";
+              $("#search").value = "";
+              updateRightFilters();
+              updateSelectionBar();
+              renderDuplicateGroupsSide();
+              renderList();
+              selectContact(group.contacts[0].id);
+            });
+            wrap.appendChild(b);
+          });
+        if (!wrap.children.length)
+          wrap.innerHTML = `<div class="dup-empty-side"><div style="font-size:24px;margin-bottom:7px">✨</div><strong>No duplicate groups</strong></div>`;
+      }
+
+      /* =========================================================
+         Selection bar
+         ========================================================= */
+      function updateSelectionBar() {
+        const bar = $("#selectionBar"),
+          n = state.checked.size;
+        bar.classList.toggle("show", n > 0);
+        $("#selectionCount").textContent = `${n} selected`;
+        $("#btnMergeSelected").disabled = n < 2;
+      }
+      function toggleChecked(id, on) {
+        if (on) state.checked.add(id);
+        else state.checked.delete(id);
+        updateSelectionBar();
+      }
+      function clearSelection() {
+        state.checked.clear();
+        clearSelectedDuplicateGroup();
+        updateSelectionBar();
+        updateRightFilters();
+        renderDuplicateGroupsSide();
+        renderList();
+      }
+
+      /* =========================================================
+         Merging
+         ========================================================= */
+      function mergePhonesInto(target, source) {
+        if (!Array.isArray(target.phones)) target.phones = [];
+        const seen = new Set(
+          target.phones.map((p) => digitsOnly(p.number)).filter(Boolean),
+        );
+        (source.phones || []).forEach((p) => {
+          const d = digitsOnly(p.number);
+          if (!d || seen.has(d)) return;
+          seen.add(d);
+          target.phones.push({
+            label: String(p.label || ""),
+            number: String(p.number || "").trim(),
+          });
+        });
+      }
+      function mergeContactsInto(keep, others) {
+        if (!keep) return 0;
+        let merged = 0;
+        others.forEach((c) => {
+          if (!c || c.id === keep.id) return;
+          FIELDS.forEach((f) => {
+            if (
+              !String(keep[f.key] || "").trim() &&
+              String(c[f.key] || "").trim()
+            )
+              keep[f.key] = c[f.key];
+          });
+          mergePhonesInto(keep, c);
+          const idx = state.contacts.findIndex((x) => x.id === c.id);
+          if (idx >= 0) {
+            state.contacts.splice(idx, 1);
+            state.checked.delete(c.id);
+            merged++;
+          }
+        });
+        keep.phones = (keep.phones || []).filter((p) =>
+          String(p.number || "").trim(),
+        );
+        if (!keep.phones.length) keep.phones = [{ label: "", number: "" }];
+        return merged;
+      }
+      function pickBestContact(list) {
+        return [...list].sort((a, b) => scoreContact(b) - scoreContact(a))[0];
+      }
+      function mergeSelected() {
+        const list = state.contacts.filter((c) => state.checked.has(c.id));
+        if (list.length < 2) {
+          toast("Select at least two contacts to merge", "warn");
+          return;
+        }
+        if (
+          !confirm(
+            `Merge ${list.length} contacts into one?\n\nThe richest record is kept and the others are removed.`,
+          )
+        )
+          return;
+        const keep = pickBestContact(list);
+        const merged = mergeContactsInto(keep, list);
+        state.checked.clear();
+        state.selectedId = keep.id;
+        clearSelectedDuplicateGroup();
+        markDirty();
+        fillForm();
+        updateEditorHead();
+        refreshDuplicateIndex();
+        renderList();
+        updateSelectionBar();
+        toast(
+          `Merged ${merged} contact${merged === 1 ? "" : "s"} into ${displayName(keep)}`,
+          "success",
+        );
+      }
+
+      /* =========================================================
+         Form
+         ========================================================= */
+      function fieldHtml(f) {
+        const cls = "field" + (f.wide ? " wide" : "");
+        const input =
+          f.type === "textarea"
+            ? `<textarea data-key="${f.key}" rows="3" placeholder="…"></textarea>`
+            : `<input data-key="${f.key}" type="${f.type}" placeholder="…">`;
+        return `<label class="${cls}" data-field="${f.key}"><span>${f.label}</span>${input}</label>`;
+      }
+      const PHONES_BLOCK = `<div class="field wide" data-field="${PHONES_KEY}" id="phonesField"><span>Phone numbers</span><div class="phones-list" data-phones></div><button type="button" class="btn add-phone" data-add-phone>＋ Add number</button></div>`;
+      formEl.innerHTML = FIELDS.map((f) =>
+        f.key === PHONES_AFTER ? fieldHtml(f) + PHONES_BLOCK : fieldHtml(f),
+      ).join("");
+
+      function phoneLabelOptions(current) {
+        const cur = String(current || "")
+            .trim()
+            .toLowerCase(),
+          set = new Set(PHONE_LABELS);
+        if (cur) set.add(cur);
+        return [...set];
+      }
+      function splitPhoneEntries(phones) {
+        if (!Array.isArray(phones)) return [];
+        const result = [];
+        phones.forEach((p) => {
+          if (!p) return;
+          const label = String(p.label || "")
+            .trim()
+            .toLowerCase();
+          const raw = String(p.number || "").trim();
+          if (!raw) return;
+          raw
+            .split(/[;\/\n]+/)
+            .map((v) => v.trim())
+            .filter(Boolean)
+            .forEach((number) => {
+              result.push({ label, number: formatIndianPhone(number) });
+            });
+        });
+        return result;
+      }
+      function renderPhones() {
+        const wrap = formEl.querySelector("[data-phones]"),
+          c = getSelected();
+        if (!wrap) return;
+        if (!c) {
+          wrap.innerHTML = "";
+          return;
+        }
+        if (!Array.isArray(c.phones) || !c.phones.length)
+          c.phones = [{ label: "", number: "" }];
+        const phoneRows = splitPhoneEntries(c.phones);
+        c.phones = phoneRows.length ? phoneRows : [{ label: "", number: "" }];
+        wrap.innerHTML = c.phones
+          .map((p, i) => {
+            const cur = String(p.label || "")
+                .trim()
+                .toLowerCase(),
+              options = ["", ...phoneLabelOptions(cur)]
+                .map(
+                  (v) =>
+                    `<option value="${escapeHtml(v)}"${v === cur ? " selected" : ""}>${v ? escapeHtml(v) : "— label —"}</option>`,
+                )
+                .join("");
+            return `<div class="phone-row" data-index="${i}"><select data-phone-label aria-label="Phone label">${options}</select><input type="tel" data-phone-number placeholder="Number" value="${escapeHtml(formatIndianPhone(p.number || ""))}" aria-label="Phone number"><button type="button" class="icon-btn" data-remove-phone title="Remove">✕</button></div>`;
+          })
+          .join("");
+      }
+      document.addEventListener("input", (event) => {
+        const el = event.target;
+        if (!(el instanceof HTMLInputElement)) return;
+        if (!el.matches("[data-phone-number], .sheet-cell[data-key='phones']"))
+          return;
+        const formatted = formatIndianPhone(el.value);
+        if (el.value !== formatted) {
+          el.value = formatted;
+          el.setSelectionRange(formatted.length, formatted.length);
+        }
+      });
+
+      function buildSettingsPanel() {
+        const items = [
+          ...FIELDS.map((f) => ({ key: f.key, label: f.label })),
+          { key: PHONES_KEY, label: "Phone numbers" },
+        ];
+        settingsListEl.innerHTML = items
+          .map(
+            (it) =>
+              `<label class="right-filter" style="padding:7px 6px" data-field-row="${it.key}"><input type="checkbox" data-field-toggle="${it.key}"${visibleFields.has(it.key) ? " checked" : ""}><span>${escapeHtml(it.label)}</span></label>`,
+          )
+          .join("");
+        updateSettingsRowStates();
+      }
+      function updateSettingsRowStates() {
+        settingsListEl.querySelectorAll("[data-field-row]").forEach((row) => {
+          const key = row.dataset.fieldRow,
+            on = visibleFields.has(key);
+          row.querySelector("input").checked = on;
+        });
+        $("#fieldBadge").textContent = String(visibleFields.size);
+      }
+      function applyFieldVisibility() {
+        formEl
+          .querySelectorAll("[data-field]")
+          .forEach((el) => (el.hidden = !visibleFields.has(el.dataset.field)));
+        updateSettingsRowStates();
+      }
+      settingsListEl.addEventListener("change", (e) => {
+        const key = e.target.dataset?.fieldToggle;
+        if (!key) return;
+        if (e.target.checked) visibleFields.add(key);
+        else visibleFields.delete(key);
+        applyFieldVisibility();
+      });
+      $("#resetFields").addEventListener("click", (e) => {
+        e.stopPropagation();
+        visibleFields.clear();
+        DEFAULT_VISIBLE.forEach((k) => visibleFields.add(k));
+        applyFieldVisibility();
+      });
+      $("#checkAllFields").addEventListener("click", (e) => {
+        e.stopPropagation();
+        visibleFields.clear();
+        FIELDS.forEach((f) => visibleFields.add(f.key));
+        visibleFields.add(PHONES_KEY);
+        applyFieldVisibility();
+      });
+      $("#checkNoneFields").addEventListener("click", (e) => {
+        e.stopPropagation();
+        visibleFields.clear();
+        applyFieldVisibility();
+      });
+
+      /* =========================================================
+         List / editor
+         ========================================================= */
+      function matchesFilter(c) {
+        if (state.selectedDupGroupSnapshot)
+          return state.selectedDupGroupSnapshot.ids.includes(c.id);
+        switch (state.filter) {
+          case "dups":
+            return state.dupIds.has(c.id);
+          case "email":
+            return hasEmail(c);
+          case "phone":
+            return hasAnyPhone(c);
+          case "company":
+            return hasCompany(c);
+          case "no-email":
+            return !hasEmail(c);
+          case "no-phone":
+            return !hasAnyPhone(c);
+          case "incomplete":
+            return (
+              hasName(c) && !hasEmail(c) && !hasAnyPhone(c) && !hasCompany(c)
+            );
+          default:
+            return true;
+        }
+      }
+      function visibleContacts() {
+        const q = state.query.trim().toLowerCase();
+        return state.contacts.filter(
+          (c) =>
+            matchesFilter(c) && (!q || haystack(c).toLowerCase().includes(q)),
+        );
+      }
+      function updateSelectAllState(items) {
+        const sa = $("#selectAll");
+        const all =
+          items.length > 0 && items.every((c) => state.checked.has(c.id));
+        const some = items.some((c) => state.checked.has(c.id));
+        sa.checked = all;
+        sa.indeterminate = !all && some;
+        sa.disabled = items.length === 0;
+        $("#listHint").textContent = items.length
+          ? `${items.length} shown`
+          : "";
+      }
+      function renderList() {
+        const items = visibleContacts();
+        listEl.innerHTML = "";
+        if (!state.contacts.length)
+          listEl.innerHTML = `<div class="empty"><div class="empty-icon">📇</div><p><strong>No contacts yet</strong></p><p>Import a CSV, vCard or Excel file,<br>or create one manually.</p></div>`;
+        else if (!items.length)
+          listEl.innerHTML = `<div class="empty"><p>No matches${state.query ? ` for “${escapeHtml(state.query)}”` : ""}${state.filter !== "all" ? " with this filter" : ""}</p></div>`;
+        else {
+          const frag = document.createDocumentFragment();
+          items.forEach((c) => {
+            const row = document.createElement("div");
+            row.className =
+              "contact-item" +
+              (c.id === state.selectedId ? " active" : "") +
+              (state.dupIds.has(c.id) ? " is-dup" : "");
+            row.dataset.id = c.id;
+            row.tabIndex = 0;
+            row.innerHTML = `<input type="checkbox" class="ci-check"${state.checked.has(c.id) ? " checked" : ""} aria-label="Select ${escapeHtml(displayName(c))}"><span class="avatar" style="background:${avatarColor(c)}">${escapeHtml(initials(c))}</span><span class="ci-body"><span class="ci-name">${escapeHtml(displayName(c))}</span><span class="ci-sub">${escapeHtml(c.email || primaryPhone(c) || c.company || "—")}</span></span>${state.dupIds.has(c.id) ? '<span class="ci-dup">DUP</span>' : ""}`;
+            row.addEventListener("click", (ev) => {
+              const cb = ev.target.closest(".ci-check");
+              if (cb) {
+                toggleChecked(c.id, cb.checked);
+                updateSelectAllState(items);
+                return;
+              }
+              selectContact(c.id);
+            });
+            row.addEventListener("keydown", (ev) => {
+              if (ev.key === "Enter" || ev.key === " ") {
+                ev.preventDefault();
+                selectContact(c.id);
+              }
+            });
+            frag.appendChild(row);
+          });
+          listEl.appendChild(frag);
+        }
+        countEl.textContent =
+          items.length === state.contacts.length
+            ? `${state.contacts.length} contact${state.contacts.length === 1 ? "" : "s"}`
+            : `${items.length} of ${state.contacts.length}`;
+        updateSelectAllState(items);
+        updateSelectionBar();
+      }
+      const getSelected = () =>
+        state.contacts.find((c) => c.id === state.selectedId) || null;
+      function updateEditorHead() {
+        const c = getSelected(),
+          av = $("#edAvatar"),
+          nm = $("#edName"),
+          sub = $("#edSub"),
+          del = $("#btnDelete"),
+          saveBtn = $("#btnSave");
+        if (!c) {
+          av.textContent = "?";
+          av.style.background = "#c7cbd4";
+          nm.textContent = "No contact selected";
+          sub.textContent = "Import a file or create a new contact to begin.";
+          del.disabled = true;
+          if (saveBtn) saveBtn.disabled = true;
+          return;
+        }
+        av.textContent = initials(c);
+        av.style.background = avatarColor(c);
+        nm.textContent = displayName(c);
+        sub.textContent =
+          c.email || primaryPhone(c) || c.company || "No details yet";
+        del.disabled = false;
+        if (saveBtn) saveBtn.disabled = false;
+      }
+      function fillForm() {
+        const c = getSelected();
+        formEl.dataset.disabled = c ? "false" : "true";
+        formEl
+          .querySelectorAll("[data-key]")
+          .forEach((inp) => (inp.value = c ? c[inp.dataset.key] || "" : ""));
+        renderPhones();
+        applyFieldVisibility();
+      }
+      function selectContact(id) {
+        state.selectedId = id;
+        fillForm();
+        updateEditorHead();
+        renderList();
+        updateUndoButton();
+      }
+      let listRaf = null;
+      function scheduleListRefresh() {
+        if (listRaf) return;
+        listRaf = requestAnimationFrame(() => {
+          listRaf = null;
+          renderList();
+          updateEditorHead();
+          refreshDuplicateIndex();
+        });
+      }
+
+      /* =========================================================
+         Right filters
+         ========================================================= */
+      function updateRightFilters() {
+        document
+          .querySelectorAll("[data-right-filter]")
+          .forEach(
+            (cb) => (cb.checked = cb.dataset.rightFilter === state.filter),
+          );
+      }
+      document.querySelectorAll("[data-right-filter]").forEach((cb) =>
+        cb.addEventListener("change", () => {
+          state.filter = cb.dataset.rightFilter;
+          clearSelectedDuplicateGroup();
+          updateRightFilters();
+          updateSelectionBar();
+          renderList();
+          renderDuplicateGroupsSide();
+        }),
+      );
+      $("#clearRightFilters").addEventListener("click", () => {
+        state.filter = "all";
+        clearSelectedDuplicateGroup();
+        updateRightFilters();
+        updateSelectionBar();
+        renderList();
+        renderDuplicateGroupsSide();
+      });
+
+      /* =========================================================
+         Actions
+         ========================================================= */
+      $("#btnImport").addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files.length) importFiles([...fileInput.files]);
+        fileInput.value = "";
+      });
+      $("#btnNew").addEventListener("click", () => {
+        const c = blankContact();
+        state.contacts.unshift(c);
+        state.query = "";
+        $("#search").value = "";
+        clearSelectedDuplicateGroup();
+        state.filter = "all";
+        updateRightFilters();
+        markDirty();
+        selectContact(c.id);
+        refreshDuplicateIndex();
+        const first = formEl.querySelector('[data-key="firstName"]');
+        if (first) first.focus();
+      });
+      $("#btnDelete").addEventListener("click", () => {
+        const c = getSelected();
+        if (!c) return;
+        if (!confirm(`Delete “${displayName(c)}”?`)) return;
+        const idx = state.contacts.findIndex((x) => x.id === c.id);
+        state.contacts.splice(idx, 1);
+        state.checked.delete(c.id);
+        clearContactUndo(c.id);
+        const next = state.contacts[Math.min(idx, state.contacts.length - 1)];
+        state.selectedId = next?.id || null;
+        markDirty();
+        fillForm();
+        updateEditorHead();
+        refreshDuplicateIndex();
+        renderList();
+        toast("Contact deleted");
+      });
+      $("#search").addEventListener("input", (e) => {
+        state.query = e.target.value;
+        renderList();
+      });
+
+      /* Selection actions */
+      $("#selectAll").addEventListener("change", (e) => {
+        const items = visibleContacts();
+        if (e.target.checked) items.forEach((c) => state.checked.add(c.id));
+        else items.forEach((c) => state.checked.delete(c.id));
+        renderList();
+      });
+      $("#btnClearSelection").addEventListener("click", clearSelection);
+      $("#btnMergeSelected").addEventListener("click", mergeSelected);
+      $("#btnDeleteSelected").addEventListener("click", () => {
+        const n = state.checked.size;
+        if (!n) return;
+        if (!confirm(`Delete ${n} selected contact${n === 1 ? "" : "s"}?`))
+          return;
+        state.checked.forEach((id) => clearContactUndo(id));
+        state.contacts = state.contacts.filter((c) => !state.checked.has(c.id));
+        state.checked.clear();
+        if (!state.contacts.some((c) => c.id === state.selectedId))
+          state.selectedId = state.contacts[0]?.id || null;
+        clearSelectedDuplicateGroup();
+        markDirty();
+        fillForm();
+        updateEditorHead();
+        refreshDuplicateIndex();
+        renderList();
+        toast(`${n} contact${n === 1 ? "" : "s"} deleted`);
+      });
+
+      /* =========================================================
+         Menus
+         ========================================================= */
+      const exportMenu = $("#exportMenu"),
+        fieldsMenu = $("#fieldsMenu");
+      function closeMenus() {
+        exportMenu.hidden = true;
+        fieldsMenu.hidden = true;
+      }
+      $("#btnExport").addEventListener("click", (e) => {
+        e.stopPropagation();
+        const open = !exportMenu.hidden;
+        closeMenus();
+        exportMenu.hidden = open;
+      });
+      $("#btnFields").addEventListener("click", (e) => {
+        e.stopPropagation();
+        const open = !fieldsMenu.hidden;
+        closeMenus();
+        fieldsMenu.hidden = open;
+      });
+      exportMenu.addEventListener("click", (e) => {
+        const fmt = e.target.dataset?.format;
+        if (fmt) {
+          exportAs(fmt);
+          closeMenus();
+        }
+      });
+      fieldsMenu.addEventListener("click", (e) => e.stopPropagation());
+      document.addEventListener("click", closeMenus);
+
+      /* =========================================================
+         Excel-style Bulk edit
+         ========================================================= */
+      function getBulkColumns() {
+        const columns = [];
+        FIELDS.forEach((f) => {
+          if (!visibleFields.has(f.key)) return;
+          columns.push({ key: f.key, label: f.label });
+          if (f.key === PHONES_AFTER && visibleFields.has(PHONES_KEY)) {
+            columns.push({ key: PHONES_KEY, label: "Phones" });
+          }
+        });
+        if (
+          visibleFields.has(PHONES_KEY) &&
+          !columns.some((c) => c.key === PHONES_KEY)
+        ) {
+          columns.unshift({ key: PHONES_KEY, label: "Phones" });
+        }
+        return columns;
+      }
+
+      let bulkDraft = [],
+        bulkOriginal = [],
+        bulkScopeIds = [];
+      let bulkActiveCell = null;
+      let bulkDeletedIds = new Set();
+      let bulkInitialIds = [];
+
+      function cloneContact(c) {
+        return JSON.parse(JSON.stringify(c));
+      }
+      function phonesToCell(c) {
+        return (c.phones || [])
+          .filter((p) => p && String(p.number || "").trim())
+          .map((p) => {
+            const number = formatIndianPhone(p.number);
+            return p.label ? `${p.label}: ${number}` : number;
+          })
+          .join("; ");
+      }
+      function cellToPhones(value) {
+        const parts = String(value || "")
+          .split(/[;/\n]+/)
+          .map((x) => x.trim())
+          .filter(Boolean);
+        if (!parts.length) return [{ label: "", number: "" }];
+        return parts
+          .map((part) => {
+            const m = part.match(
+              /^([A-Za-z][A-Za-z0-9 _+\-]{0,24}?)\s*:\s*(.+)$/,
+            );
+            return {
+              label: m ? m[1].trim().toLowerCase() : "",
+              number: formatIndianPhone(
+                normalizeImportedPhone(m ? m[2] : part),
+              ),
+            };
+          })
+          .filter((p) => p.number);
+      }
+      function getBulkTargets() {
+        const scope = $("#bulkScope").value;
+        if (scope === "selected")
+          return state.contacts.filter((c) => state.checked.has(c.id));
+        if (scope === "filtered") return visibleContacts();
+        if (scope === "group") return selectedSnapshotGroup()?.contacts || [];
+        return [...state.contacts];
+      }
+      function bulkCellValue(c, key) {
+        return key === "phones" ? phonesToCell(c) : String(c[key] ?? "");
+      }
+      function setBulkCellValue(c, key, value) {
+        if (key === "phones") c.phones = cellToPhones(value);
+        else c[key] = String(value ?? "");
+      }
+      function renderBulkSheet() {
+        const head = $("#bulkSheetHead"),
+          body = $("#bulkSheetBody");
+        const columns = getBulkColumns();
+
+        head.innerHTML =
+          `<tr><th class="sheet-no">#</th><th class="sheet-contact">Contact</th>` +
+          columns.map((col) => `<th>${escapeHtml(col.label)}</th>`).join("") +
+          `<th class="sheet-delete" title="Delete contact"><span class="sheet-label" title="🗑">🗑</span></th></tr>`;
+
+        body.innerHTML = bulkDraft
+          .map((c, rowIndex) => {
+            const changed =
+              JSON.stringify(c) !== JSON.stringify(bulkOriginal[rowIndex]);
+            return `
+            <tr class="${changed ? "changed" : ""}" data-row="${rowIndex}">
+              <td class="sheet-no"><span class="sheet-rowno">${rowIndex + 1}</span></td>
+              <td class="sheet-contact">
+                <div class="sheet-contact-inner">
+                  <span class="sheet-mini-avatar" style="background:${avatarColor(c)}">${escapeHtml(initials(c))}</span>
+                  <span class="sheet-contact-name" title="${escapeHtml(displayName(c))}">${escapeHtml(displayName(c))}</span>
+                </div>
+              </td>
+              ${columns
+                .map(
+                  (col) => `
+                <td>
+                  <input class="sheet-cell"
+                    data-row="${rowIndex}"
+                    data-key="${escapeHtml(col.key)}"
+                    value="${escapeHtml(col.key === "phones" ? formatIndianPhone(bulkCellValue(c, col.key)) : bulkCellValue(c, col.key))}"
+                    aria-label="${escapeHtml(col.label)} for ${escapeHtml(displayName(c))}"
+                  />
+                </td>
+              `,
+                )
+                .join("")}
+              <td class="sheet-delete"><button type="button" class="sheet-delete-btn" data-bulk-delete="${rowIndex}" title="Delete contact">🗑</button></td>
+            </tr>`;
+          })
+          .join("");
+
+        $("#sheetInfo").textContent =
+          `${bulkDraft.length} contact${bulkDraft.length === 1 ? "" : "s"} · ${columns.length} fields`;
+
+        body.querySelectorAll(".sheet-cell").forEach((input) => {
+          input.addEventListener("focus", () => {
+            bulkActiveCell = input;
+          });
+          input.addEventListener("input", () => {
+            const row = Number(input.dataset.row);
+            const key = input.dataset.key;
+            setBulkCellValue(bulkDraft[row], key, input.value);
+            const tr = input.closest("tr");
+            if (tr) {
+              tr.classList.toggle(
+                "changed",
+                JSON.stringify(bulkDraft[row]) !==
+                  JSON.stringify(bulkOriginal[row]),
+              );
+              const name = tr.querySelector(".sheet-contact-name");
+              if (name) {
+                name.textContent = displayName(bulkDraft[row]);
+                name.title = displayName(bulkDraft[row]);
+              }
+              const avatar = tr.querySelector(".sheet-mini-avatar");
+              if (avatar) {
+                avatar.textContent = initials(bulkDraft[row]);
+                avatar.style.background = avatarColor(bulkDraft[row]);
+              }
+            }
+          });
+          input.addEventListener("keydown", (e) => {
+            const row = Number(input.dataset.row);
+            const keyIndex = columns.findIndex(
+              (c) => c.key === input.dataset.key,
+            );
+            if (e.key === "Tab") {
+              e.preventDefault();
+              const nextIndex = e.shiftKey ? keyIndex - 1 : keyIndex + 1;
+              if (nextIndex >= 0 && nextIndex < columns.length) {
+                body
+                  .querySelector(
+                    `.sheet-cell[data-row="${row}"][data-key="${columns[nextIndex].key}"]`,
+                  )
+                  ?.focus();
+              } else if (!e.shiftKey && row + 1 < bulkDraft.length) {
+                body
+                  .querySelector(
+                    `.sheet-cell[data-row="${row + 1}"][data-key="${columns[0]?.key}"]`,
+                  )
+                  ?.focus();
+              }
+            } else if (e.key === "Enter") {
+              e.preventDefault();
+              const nextRow = e.shiftKey ? row - 1 : row + 1;
+              if (nextRow >= 0 && nextRow < bulkDraft.length) {
+                body
+                  .querySelector(
+                    `.sheet-cell[data-row="${nextRow}"][data-key="${input.dataset.key}"]`,
+                  )
+                  ?.focus();
+              }
+            }
+          });
+        });
+        bindBulkDeleteButtons();
+      }
+      function bindBulkDeleteButtons() {
+        $("#bulkSheetBody")
+          .querySelectorAll("[data-bulk-delete]")
+          .forEach((button) => {
+            button.addEventListener("click", () => {
+              const row = Number(button.dataset.bulkDelete);
+              const id = bulkScopeIds[row];
+              if (!id) return;
+              const name = displayName(bulkDraft[row]);
+              bulkDeletedIds.add(id);
+              bulkDraft.splice(row, 1);
+              bulkOriginal.splice(row, 1);
+              bulkScopeIds.splice(row, 1);
+              bulkActiveCell = null;
+              renderBulkSheet();
+              bindBulkDeleteButtons();
+              toast(`Marked ${name} for deletion`, "warn");
+            });
+          });
+      }
+      function updateBulkScopeOptions(preferred) {
+        const checkedCount = state.checked.size;
+        const group = selectedSnapshotGroup();
+        const filtered = visibleContacts().length;
+        const opts = [];
+        if (checkedCount)
+          opts.push(
+            `<option value="selected">Selected contacts (${checkedCount})</option>`,
+          );
+        if (group && group.contacts.length)
+          opts.push(
+            `<option value="group">Duplicate group (${group.contacts.length})</option>`,
+          );
+        opts.push(
+          `<option value="filtered">Currently shown (${filtered})</option>`,
+        );
+        opts.push(
+          `<option value="all">All contacts (${state.contacts.length})</option>`,
+        );
+        $("#bulkScope").innerHTML = opts.join("");
+        const valid = opts.some((x) => x.includes(`value="${preferred}"`));
+        $("#bulkScope").value = valid
+          ? preferred
+          : checkedCount
+            ? "selected"
+            : "filtered";
+      }
+      function openBulkEdit() {
+        updateBulkScopeOptions(state.checked.size ? "selected" : "filtered");
+        bulkScopeIds = getBulkTargets().map((c) => c.id);
+        bulkInitialIds = [...bulkScopeIds];
+        bulkDeletedIds = new Set();
+        bulkOriginal = bulkScopeIds
+          .map((id) => state.contacts.find((c) => c.id === id))
+          .filter(Boolean)
+          .map(cloneContact);
+        bulkDraft = bulkOriginal.map(cloneContact);
+        $("#bulkSubtitle").textContent =
+          "Edit multiple contacts directly in an Excel-style grid. Changes are applied when you click Save changes.";
+        renderBulkSheet();
+        openModal($("#bulkOverlay"));
+        setTimeout(() => {
+          $("#bulkSheetBody .sheet-cell")?.focus();
+        }, 50);
+      }
+      function closeBulkEdit() {
+        closeModal($("#bulkOverlay"));
+        bulkDraft = [];
+        bulkOriginal = [];
+        bulkScopeIds = [];
+        bulkActiveCell = null;
+        bulkDeletedIds = new Set();
+        bulkInitialIds = [];
+      }
+      function resetBulkSheet() {
+        bulkScopeIds = bulkInitialIds.filter((id) =>
+          state.contacts.some((c) => c.id === id),
+        );
+        bulkOriginal = bulkScopeIds
+          .map((id) => state.contacts.find((c) => c.id === id))
+          .filter(Boolean)
+          .map(cloneContact);
+        bulkDraft = bulkOriginal.map(cloneContact);
+        bulkDeletedIds = new Set();
+        renderBulkSheet();
+      }
+      function sheetSelectedInput() {
+        return bulkActiveCell ||
+          document.activeElement?.classList?.contains("sheet-cell")
+          ? bulkActiveCell || document.activeElement
+          : null;
+      }
+
+      $("#btnBulkEdit").addEventListener("click", openBulkEdit);
+      $("#closeBulkEdit").addEventListener("click", closeBulkEdit);
+      $("#cancelBulkEdit").addEventListener("click", closeBulkEdit);
+      $("#bulkOverlay").addEventListener("click", (e) => {
+        if (e.target.id === "bulkOverlay") closeBulkEdit();
+      });
+      $("#bulkScope").addEventListener("change", () => {
+        bulkScopeIds = getBulkTargets().map((c) => c.id);
+        bulkInitialIds = [...bulkScopeIds];
+        bulkDeletedIds = new Set();
+        bulkOriginal = bulkScopeIds
+          .map((id) => state.contacts.find((c) => c.id === id))
+          .filter(Boolean)
+          .map(cloneContact);
+        bulkDraft = bulkOriginal.map(cloneContact);
+        renderBulkSheet();
+      });
+      $("#sheetReset").addEventListener("click", resetBulkSheet);
+      $("#sheetSelectAll").addEventListener("click", () => {
+        const inputs = [
+          ...document.querySelectorAll("#bulkSheetBody .sheet-cell"),
+        ];
+        inputs[0]?.focus();
+        toast(`${bulkDraft.length} contacts in the bulk editor`, "info");
+      });
+      $("#sheetClearCell").addEventListener("click", () => {
+        const input = sheetSelectedInput();
+        if (!input) {
+          toast("Select a cell first", "warn");
+          return;
+        }
+        input.value = "";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.focus();
+      });
+      $("#sheetFillDown").addEventListener("click", () => {
+        const input = sheetSelectedInput();
+        if (!input) {
+          toast("Select a cell first", "warn");
+          return;
+        }
+        const row = Number(input.dataset.row);
+        const key = input.dataset.key;
+        const value = input.value;
+        for (let r = row + 1; r < bulkDraft.length; r++) {
+          setBulkCellValue(bulkDraft[r], key, value);
+        }
+        renderBulkSheet();
+        document
+          .querySelector(`.sheet-cell[data-row="${row}"][data-key="${key}"]`)
+          ?.focus();
+        toast(
+          `Filled ${Math.max(0, bulkDraft.length - row - 1)} rows`,
+          "success",
+        );
+      });
+      $("#applyBulkEdit").addEventListener("click", () => {
+        let changedContacts = 0,
+          deletedContacts = 0;
+        if (bulkDeletedIds.size) {
+          const before = state.contacts.length;
+          state.contacts = state.contacts.filter(
+            (c) => !bulkDeletedIds.has(c.id),
+          );
+          deletedContacts = before - state.contacts.length;
+          bulkDeletedIds.forEach((id) => {
+            state.checked.delete(id);
+            clearContactUndo(id);
+          });
+        }
+        bulkDraft.forEach((draft, index) => {
+          const id = bulkScopeIds[index];
+          const target = state.contacts.find((c) => c.id === id);
+          const original = bulkOriginal[index];
+          if (!target || !original) return;
+          if (JSON.stringify(target) !== JSON.stringify(draft)) {
+            captureUndo(target);
+            Object.assign(target, cloneContact(draft));
+            target.id = id;
+            changedContacts++;
+          }
+        });
+        if (!changedContacts && !deletedContacts) {
+          toast("No changes to save", "info");
+          return;
+        }
+        markDirty();
+        closeBulkEdit();
+        fillForm();
+        updateEditorHead();
+        refreshDuplicateIndex();
+        renderList();
+        renderDuplicateGroupsSide();
+        updateSelectionBar();
+        const parts = [];
+        if (changedContacts) parts.push(`updated ${changedContacts}`);
+        if (deletedContacts) parts.push(`deleted ${deletedContacts}`);
+        toast(
+          parts.join(" · ").replace(/^./, (m) => m.toUpperCase()),
+          "success",
+        );
+      });
+
+      /* =========================================================
+         Per-contact Undo
+         ========================================================= */
+      const contactUndo = new Map();
+      function cloneContactValue(contact) {
+        return JSON.parse(JSON.stringify(contact));
+      }
+      function captureUndo(contact) {
+        if (!contact || contactUndo.has(contact.id)) return;
+        contactUndo.set(contact.id, cloneContactValue(contact));
+        updateUndoButton();
+      }
+      function updateUndoButton() {
+        const btn = $("#btnUndoContact");
+        if (!btn) return;
+        const c = getSelected();
+        btn.classList.toggle("show", !!c && contactUndo.has(c.id));
+      }
+      function clearContactUndo(contactId) {
+        contactUndo.delete(contactId);
+        updateUndoButton();
+      }
+      function undoSelectedContact() {
+        const current = getSelected();
+        if (!current || !contactUndo.has(current.id)) return;
+        const snapshot = contactUndo.get(current.id);
+        const restored = cloneContactValue(snapshot);
+        const id = current.id;
+        const index = state.contacts.findIndex((c) => c.id === id);
+        if (index < 0) return;
+        restored.id = id;
+        state.contacts[index] = restored;
+        contactUndo.delete(id);
+        markDirty();
+        fillForm();
+        updateEditorHead();
+        refreshDuplicateIndex();
+        renderList();
+        updateUndoButton();
+        toast("Changes undone for this contact", "success");
+      }
+      $("#btnUndoContact").addEventListener("click", undoSelectedContact);
+
+      /* =========================================================
+         Form editing
+         ========================================================= */
+      const editBaseline = new WeakMap();
+      formEl.addEventListener("focusin", (e) => {
+        const t = e.target,
+          c = getSelected();
+        if (!c) return;
+        if (t.dataset.key) editBaseline.set(t, String(c[t.dataset.key] ?? ""));
+        else if (
+          t.hasAttribute("data-phone-label") ||
+          t.hasAttribute("data-phone-number")
+        ) {
+          const r = t.closest(".phone-row"),
+            i = Number(r.dataset.index);
+          const k = t.hasAttribute("data-phone-label") ? "label" : "number";
+          editBaseline.set(t, String(c.phones?.[i]?.[k] ?? ""));
+        }
+      });
+      formEl.addEventListener("input", (e) => {
+        const t = e.target,
+          c = getSelected();
+        if (!c) return;
+        if (t.dataset.key) {
+          const k = t.dataset.key;
+          captureUndo(c);
+          c[k] = t.value;
+          markDirty();
+          scheduleListRefresh();
+          return;
+        }
+        if (
+          t.hasAttribute("data-phone-label") ||
+          t.hasAttribute("data-phone-number")
+        ) {
+          const r = t.closest(".phone-row"),
+            i = Number(r.dataset.index);
+          if (!c.phones[i]) c.phones[i] = { label: "", number: "" };
+          const k = t.hasAttribute("data-phone-label") ? "label" : "number";
+          captureUndo(c);
+          c.phones[i][k] = t.value;
+          markDirty();
+          scheduleListRefresh();
+        }
+      });
+      formEl.addEventListener("click", (e) => {
+        const c = getSelected();
+        if (!c) return;
+        if (e.target.closest("[data-add-phone]")) {
+          captureUndo(c);
+          if (!Array.isArray(c.phones)) c.phones = [];
+          c.phones.push({ label: "", number: "" });
+          markDirty();
+          renderPhones();
+          applyFieldVisibility();
+          const rows = formEl.querySelectorAll(".phone-row");
+          rows[rows.length - 1]?.querySelector("[data-phone-label]")?.focus();
+          return;
+        }
+        const rm = e.target.closest("[data-remove-phone]");
+        if (rm) {
+          const row = rm.closest(".phone-row"),
+            idx = Number(row.dataset.index);
+          captureUndo(c);
+          c.phones.splice(idx, 1);
+          if (!c.phones.length) c.phones = [{ label: "", number: "" }];
+          markDirty();
+          renderPhones();
+          scheduleListRefresh();
+        }
+      });
+
+      /* =========================================================
+         Export
+         ========================================================= */
+      function csvEscape(v) {
+        const s = String(v ?? "");
+        return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      }
+      function vEsc(v) {
+        return String(v ?? "")
+          .replace(/\\/g, "\\\\")
+          .replace(/\n/g, "\\n")
+          .replace(/,/g, "\\,")
+          .replace(/;/g, "\\;");
+      }
+      function exportAs(format) {
+        if (!state.contacts.length) {
+          toast("Nothing to export", "warn");
+          return;
+        }
+        const rows = state.contacts;
+        if (format === "csv") {
+          const head = [...FIELDS.map((f) => f.label), "Phone numbers"]
+            .map(csvEscape)
+            .join(",");
+          const body = rows.map((c) =>
+            [
+              ...FIELDS.map((f) => csvEscape(c[f.key])),
+              csvEscape(formatPhones(c)),
+            ].join(","),
+          );
+          download(
+            `contacts-${stamp()}.csv`,
+            new Blob(["\uFEFF", [head, ...body].join("\r\n")], {
+              type: "text/csv;charset=utf-8",
+            }),
+          );
+        } else if (format === "vcf") {
+          const cards = rows
+            .map((c) => {
+              const L = ["BEGIN:VCARD", "VERSION:3.0"];
+              L.push(`N:${vEsc(c.lastName)};${vEsc(c.firstName)};;;`);
+              L.push(
+                `FN:${vEsc([c.firstName, c.lastName].filter(Boolean).join(" "))}`,
+              );
+              if (c.company) L.push(`ORG:${vEsc(c.company)}`);
+              if (c.jobTitle) L.push(`TITLE:${vEsc(c.jobTitle)}`);
+              if (c.email)
+                c.email
+                  .split(/\s*[,;]\s*/)
+                  .filter(Boolean)
+                  .forEach((e) => L.push(`EMAIL;TYPE=INTERNET:${vEsc(e)}`));
+              (c.phones || [])
+                .filter((p) => p && String(p.number || "").trim())
+                .forEach((p) => {
+                  const t = String(p.label || "")
+                    .trim()
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "");
+                  L.push(
+                    `TEL${t ? ";TYPE=" + t : ""}:${vEsc(String(p.number).trim())}`,
+                  );
+                });
+              if (c.address || c.city || c.state || c.zip || c.country)
+                L.push(
+                  `ADR;TYPE=WORK:;;${vEsc(c.address)};${vEsc(c.city)};${vEsc(c.state)};${vEsc(c.zip)};${vEsc(c.country)}`,
+                );
+              if (c.website) L.push(`URL:${vEsc(c.website)}`);
+              if (c.birthday) L.push(`BDAY:${vEsc(c.birthday)}`);
+              if (c.tags) L.push(`CATEGORIES:${vEsc(c.tags)}`);
+              if (c.notes) L.push(`NOTE:${vEsc(c.notes)}`);
+              L.push("END:VCARD");
+              return L.join("\r\n");
+            })
+            .join("\r\n");
+          download(
+            `contacts-${stamp()}.vcf`,
+            new Blob([cards + "\r\n"], { type: "text/vcard;charset=utf-8" }),
+          );
+        } else if (format === "xlsx") {
+          if (typeof XLSX === "undefined") {
+            toast("Spreadsheet library not loaded", "error");
+            return;
+          }
+          const labels = [...FIELDS.map((f) => f.label), "Phone numbers"];
+          const data = rows.map((c) => {
+            const o = {};
+            FIELDS.forEach((f) => (o[f.label] = c[f.key] || ""));
+            o["Phone numbers"] = formatPhones(c);
+            return o;
+          });
+          const ws = XLSX.utils.json_to_sheet(data, { header: labels });
+          ws["!cols"] = labels.map((l) => ({
+            wch: Math.max(14, Math.min(34, l.length + 8)),
+          }));
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Contacts");
+          XLSX.writeFile(wb, `contacts-${stamp()}.xlsx`);
+        } else if (format === "json") {
+          download(
+            `contacts-${stamp()}.json`,
+            new Blob([JSON.stringify(rows, null, 2)], {
+              type: "application/json",
+            }),
+          );
+        }
+        toast(
+          `Exported ${rows.length} contact${rows.length === 1 ? "" : "s"} as ${format.toUpperCase()}`,
+          "success",
+        );
+      }
+
+      /* =========================================================
+         Drag & drop
+         ========================================================= */
+      let dragDepth = 0;
+      window.addEventListener("dragenter", (e) => {
+        if (!e.dataTransfer?.types?.includes("Files")) return;
+        dragDepth++;
+        dropzoneEl.classList.add("show");
+      });
+      window.addEventListener("dragover", (e) => e.preventDefault());
+      window.addEventListener("dragleave", () => {
+        dragDepth = Math.max(0, dragDepth - 1);
+        if (!dragDepth) dropzoneEl.classList.remove("show");
+      });
+      window.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dragDepth = 0;
+        dropzoneEl.classList.remove("show");
+        const files = [...(e.dataTransfer?.files || [])];
+        if (files.length) importFiles(files);
+      });
+
+      /* Double-click a duplicate group to bulk edit. */
+      duplicateGroupsSide.addEventListener("dblclick", (e) => {
+        if (e.target.closest(".dup-group-item")) openBulkEdit();
+      });
+
+      /* =========================================================
+         Boot
+         ========================================================= */
+      buildSettingsPanel();
+      applyFieldVisibility();
+
+      const restored = loadFromStorage();
+      renderList();
+      if (state.contacts.length) selectContact(state.contacts[0].id);
+      updateEditorHead();
+      fillForm();
+      refreshDuplicateIndex();
+      updateRightFilters();
+      updateSelectionBar();
+      setDirty(false);
+      if (restored)
+        toast(
+          `Restored ${state.contacts.length} saved contact${state.contacts.length === 1 ? "" : "s"} from this browser`,
+          "success",
+        );
+    </script>
+  </body>
+</html>
