@@ -635,7 +635,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
           if (!idbData) return;
           if (applyLoadedData(idbData)) {
             renderAll();
-            setSaveStatus("ok", "✓ Restored from backup", true);
+            toast("Restored from backup", "", "success");
           }
         })
         .catch((e) => {
@@ -3407,16 +3407,14 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     renderAll();
 
     if (had && (state.contacts.length || state.columns.length)) {
-      setSaveStatus(
-        "ok",
-        "✓ Restored " +
+      toast(
+        "Restored " +
           state.contacts.length +
           " contact" +
           (state.contacts.length === 1 ? "" : "s"),
-        true,
+        "",
+        "success",
       );
-    } else {
-      setSaveStatus("ok", "✓ Ready (auto-save on)", true);
     }
   }
   init();
