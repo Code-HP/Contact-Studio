@@ -2183,9 +2183,9 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
     if (contact.phoneEntries && contact.phoneEntries.length)
       return contact.phoneEntries
         .map((e) => (e.label ? e.number + " (" + e.label + ")" : e.number))
-        .join(", ");
+        .join("\n");
     return contact.phones && contact.phones.length
-      ? contact.phones.join(", ")
+      ? contact.phones.join("\n")
       : "None";
   }
 
@@ -2325,7 +2325,7 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
         "<span>" +
         escapeHtml(pair[0]) +
         "</span><b>" +
-        escapeHtml(pair[1]) +
+        escapeHtml(pair[1]).replace(/\n/g, "<br>") +
         "</b>";
       quick.appendChild(card);
     });
