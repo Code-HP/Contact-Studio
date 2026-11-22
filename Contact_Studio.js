@@ -3247,20 +3247,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
 
   }
 
-  if (els.toggleDupesBtn) {
-    els.toggleDupesBtn.addEventListener("click", () => {
-      const showing = !els.dupesDrawer.hidden;
-      els.dupesDrawer.hidden = showing;
-      els.toggleDupesBtn.classList.toggle("active", !showing);
-      renderDupesDrawer();
-    });
-  }
-  if (els.dupesClose) {
-    els.dupesClose.addEventListener("click", () => {
-      els.dupesDrawer.hidden = true;
-      els.toggleDupesBtn.classList.remove("active");
-    });
-  }
 
   const bindMatch = (el, key) =>
     el &&
@@ -3364,11 +3350,6 @@ window.__CONTACT_STUDIO_XLSX_READY__ = typeof XLSX !== "undefined";
       }
       if (!els.detailsModal.hidden) {
         closeContactDetails();
-        return;
-      }
-      if (els.dupesDrawer && !els.dupesDrawer.hidden) {
-        els.dupesDrawer.hidden = true;
-        els.toggleDupesBtn.classList.remove("active");
         return;
       }
       closeAllMenus();
